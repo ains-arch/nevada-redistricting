@@ -232,4 +232,4 @@ print("\nGraph sanity check no overlaps")
 graph = Graph.from_geodataframe(no_overlap_gdf)
 
 # Save the repaired shapefile
-gdf.to_file("data/precinct_p_fixed.shp")
+no_overlap_gdf.to_file("data/precinct_p_fixed.shp")
