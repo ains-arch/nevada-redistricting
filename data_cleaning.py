@@ -13,85 +13,85 @@ print("CSV CLEANING AND MERGING")
 # Define chunk size for reading in pieces
 CHUNK_SIZE = 100000  # Adjust this based on available memory
 
-# # Columns to keep and their target data types
-# columns_to_keep = {
-#     "PRECINCT": "int", 
-#     "CONGRESS": "int", 
-#     "ASSEMBLY": "int", 
-#     "SENATE": "int", 
-#     "PARTY_REG": "str", 
-#     "RES_STREET_NUM": "str", 
-#     "RES_DIRECTION": "str", 
-#     "RES_STREET_NAME": "str", 
-#     "RES_ADDRESS_TYPE": "str", 
-#     "RES_UNIT": "str", 
-#     "RES_CITY": "str", 
-#     "RES_STATE": "str", 
-#     "RES_ZIP_CODE": "int", 
-#     "REGISTRATION_NUM": "int"
-# }
-# 
-# # Initialize an empty DataFrame to store cleaned data
-# cleaned_chunks = []
-# 
-# # Process the registration file in chunks
-# for chunk in pd.read_csv('data/registration.csv', chunksize=CHUNK_SIZE, low_memory=False):
-#     # Drop unnecessary columns
-#     chunk = chunk[columns_to_keep.keys()]
-# 
-#     # Convert columns to the desired data types
-#     for col, dtype in columns_to_keep.items():
-#         if dtype == "int":
-#             # Handle leading zeros and mixed types
-#             chunk[col] = pd.to_numeric(chunk[col], errors="coerce").astype("Int64")
-#         elif dtype == "str":
-#             chunk[col] = chunk[col].astype("str")
-# 
-#     # Append the cleaned chunk to the list
-#     cleaned_chunks.append(chunk)
-# 
-# # Concatenate all cleaned chunks into a single DataFrame
-# cleaned_df = pd.concat(cleaned_chunks, ignore_index=True)
-# 
-# # Save the cleaned registration data
-# cleaned_df.to_csv("data/registration_fixed.csv", index=False)
-# print("Cleaned registration data saved to 'data/registration_fixed.csv'.")
-# 
-# # Ensure idnumber in voters.csv is also an integer
-# voters_df = pd.read_csv('data/voters.csv', dtype={'idnumber': 'str'})
-# 
-# # Convert idnumber to integer
-# voters_df['idnumber'] = pd.to_numeric(voters_df['idnumber'], errors='coerce').astype("Int64")
-# 
-# # Save the cleaned voters data
-# voters_df.to_csv("data/voters_fixed.csv", index=False)
-# print("Cleaned voters data saved to 'data/voters_fixed.csv'.")
-# 
-# # Continue with the merge with voters_fixed.csv
-# merged_chunks = []
-# 
-# # Read the cleaned registration file in chunks
-# for i in range(0, len(cleaned_df), CHUNK_SIZE):
-#     # Create a chunk from the DataFrame
-#     chunk = cleaned_df.iloc[i:i + CHUNK_SIZE]
-# 
-#     # Merge with the voters DataFrame
-#     merged_chunk = pd.merge(chunk, voters_df,
-#                             left_on='REGISTRATION_NUM', right_on='idnumber', how='inner')
-# 
-#     # Append the merged chunk to the list
-#     merged_chunks.append(merged_chunk)
-# 
-# # Concatenate all merged chunks into a single DataFrame
-# final_df = pd.concat(merged_chunks, ignore_index=True)
-# 
-# # Save the result to a new CSV
-# final_df.to_csv('data/filtered_voters.csv', index=False)
-# print("Filtered join completed and saved to 'filtered_voters.csv'.")
-# 
-# # Final preview
-# print(final_df.head())
-# print(final_df.tail())
+# Columns to keep and their target data types
+columns_to_keep = {
+    "PRECINCT": "int", 
+    "CONGRESS": "int", 
+    "ASSEMBLY": "int", 
+    "SENATE": "int", 
+    "PARTY_REG": "str", 
+    "RES_STREET_NUM": "str", 
+    "RES_DIRECTION": "str", 
+    "RES_STREET_NAME": "str", 
+    "RES_ADDRESS_TYPE": "str", 
+    "RES_UNIT": "str", 
+    "RES_CITY": "str", 
+    "RES_STATE": "str", 
+    "RES_ZIP_CODE": "int", 
+    "REGISTRATION_NUM": "int"
+}
+
+# Initialize an empty DataFrame to store cleaned data
+cleaned_chunks = []
+
+# Process the registration file in chunks
+for chunk in pd.read_csv('data/registration.csv', chunksize=CHUNK_SIZE, low_memory=False):
+    # Drop unnecessary columns
+    chunk = chunk[columns_to_keep.keys()]
+
+    # Convert columns to the desired data types
+    for col, dtype in columns_to_keep.items():
+        if dtype == "int":
+            # Handle leading zeros and mixed types
+            chunk[col] = pd.to_numeric(chunk[col], errors="coerce").astype("Int64")
+        elif dtype == "str":
+            chunk[col] = chunk[col].astype("str")
+
+    # Append the cleaned chunk to the list
+    cleaned_chunks.append(chunk)
+
+# Concatenate all cleaned chunks into a single DataFrame
+cleaned_df = pd.concat(cleaned_chunks, ignore_index=True)
+
+# Save the cleaned registration data
+cleaned_df.to_csv("data/registration_fixed.csv", index=False)
+print("Cleaned registration data saved to 'data/registration_fixed.csv'.")
+
+# Ensure idnumber in voters.csv is also an integer
+voters_df = pd.read_csv('data/voters.csv', dtype={'idnumber': 'str'})
+
+# Convert idnumber to integer
+voters_df['idnumber'] = pd.to_numeric(voters_df['idnumber'], errors='coerce').astype("Int64")
+
+# Save the cleaned voters data
+voters_df.to_csv("data/voters_fixed.csv", index=False)
+print("Cleaned voters data saved to 'data/voters_fixed.csv'.")
+
+# Continue with the merge with voters_fixed.csv
+merged_chunks = []
+
+# Read the cleaned registration file in chunks
+for i in range(0, len(cleaned_df), CHUNK_SIZE):
+    # Create a chunk from the DataFrame
+    chunk = cleaned_df.iloc[i:i + CHUNK_SIZE]
+
+    # Merge with the voters DataFrame
+    merged_chunk = pd.merge(chunk, voters_df,
+                            left_on='REGISTRATION_NUM', right_on='idnumber', how='inner')
+
+    # Append the merged chunk to the list
+    merged_chunks.append(merged_chunk)
+
+# Concatenate all merged chunks into a single DataFrame
+final_df = pd.concat(merged_chunks, ignore_index=True)
+
+# Save the result to a new CSV
+final_df.to_csv('data/filtered_voters.csv', index=False)
+print("Filtered join completed and saved to 'filtered_voters.csv'.")
+
+# Final preview
+print(final_df.head())
+print(final_df.tail())
 
 ### PRECINCT SHAPEFILE ###
 print("\nPRECINCT SHAPEFILE CLEANING")
@@ -195,62 +195,9 @@ print("\nmaup doctor on merged gdf")
 maup.doctor(merged_gdf)
 print("End maup doctor on merged gdf")
 
-# Try smart repair again
-# print("\nResolving overlaps")
-# no_overlap_gdf = merged_gdf.copy()
-# no_overlap_gdf['geometry'] = resolve_overlaps(merged_gdf, relative_threshold=None)
-# print("Overlaps resolved")
-# print(no_overlap_gdf)
-
-# Check that repair succeeded:
-# print("\nmaup doctor on resolved overlaps")
-# maup.doctor(no_overlap_gdf)
-# print("End maup doctor on resolved overlaps")
-
-# no_overlap_gdf.plot()
-# plt.savefig("figs/no_overlaps.png")
-
 # Check dual graph
 print("\nGraph sanity check merged gdf")
 graph = Graph.from_geodataframe(merged_gdf)
-# print("\nWell. Sanity check failed...")
-
-# Repair invalid geometries again
-# final_gdf = no_overlap_gdf.copy()
-# final_gdf['geometry'] = final_gdf['geometry'].buffer(0)
-
-# Check dual graph
-# print("\nGraph sanity check final gdf")
-# graph = Graph.from_geodataframe(final_gdf)
-
-# Identify and handle islands
-# islands = [node for node, degree in graph.degree if degree == 0]
-# print(f"Island precincts: {islands}\n")
 
 # Save the repaired shapefile
 merged_gdf.to_file("data/precinct_p_fixed.shp")
-
-# islands_gdf = final_gdf.loc[[984, 985, 986, 987, 988]]
-# print("islands and neighborhood:\n", islands_gdf)
-# print("final gdf full:\n", final_gdf)
-# print("final gdf precinct 7908:\n", final_gdf[final_gdf['PREC'] == 7908])
-
-# Plot all precincts
-# fig, ax = plt.subplots(figsize=(10, 10))
-# print("plot final gdf")
-# final_gdf.plot(ax=ax, color="lightgrey", edgecolor="black", alpha=0.5)
-
-# Highlight the islands
-# print("plot islands")
-# islands_gdf.plot(ax=ax, color="red", edgecolor="black")
-
-# Annotate the island precincts with their index
-# print("annotate islands")
-# for idx, row in islands_gdf.iterrows():
-    # x, y = row.geometry.centroid.x, row.geometry.centroid.y
-    # ax.text(x, y, str(idx), fontsize=12, color="blue")
-
-# plt.title("Island Precincts (985 and 987)")
-# plt.savefig("islands.png")
-
-# print(islands_gdf)
