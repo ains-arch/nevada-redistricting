@@ -120,13 +120,13 @@ gdf = gdf.fillna(0)
 
 # Plot maps for each party
 plot_map(gdf, 'dem_perc', 'Blues',
-         'Democratic Registration Percentage by Precinct',
+         'Democratic Percentage by Precinct',
          'figs/dem_perc.png')
 plot_map(gdf, 'rep_perc', 'Reds',
-         'Republican Registration Percentage by Precinct',
+         'Republican Percentage by Precinct',
          'figs/rep_perc.png')
 plot_map(gdf, 'np_perc', 'viridis', 
-         'Non-Partisan Registration Percentage by Precinct',
+         'Non-Partisan Percentage by Precinct',
          'figs/np_perc.png')
 
 # Reloading graph
@@ -274,15 +274,15 @@ def analyze_districts(gdf, level, graph, cut_edges, summary_df=None):
 
     # Plot maps
     plot_map(gdf, parties[0][2], 'Blues',
-             f'Democratic Voters Percentage by {level.capitalize()} District',
+             f'Democratic Percentage by {level.capitalize()} District',
              f'figs/dem_perc_{level}.png', level)
 
     plot_map(gdf, parties[1][2], 'Reds',
-             f'Republican Voters Percentage by {level.capitalize()} District',
+             f'Republican Percentage by {level.capitalize()} District',
              f'figs/rep_perc_{level}.png', level)
 
     plot_map(gdf, parties[2][2], 'viridis',
-             f'Independent Voters Percentage by {level.capitalize()} District',
+             f'Independent Percentage by {level.capitalize()} District',
              f'figs/np_perc_{level}.png', level)
 
     # Reloading graph
@@ -346,11 +346,11 @@ def save_histogram(data, enacted_value, party, metric, color, flag, output_dir="
     if metric:
         plt.title(f"{party} {metric.capitalize()} Districts from {flag.capitalize()} Start", fontsize=14)
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
-                    label=f"Enacted plan's {metric} = {enacted_value}")
+                    label=f"Enacted plan = {enacted_value}")
     else:
         plt.title(f"{party} from {flag.capitalize()} Start", fontsize=14)
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
-                    label=f"Enacted plan's {party.lower()} = {enacted_value}")
+                    label=f"Enacted plan = {enacted_value}")
     plt.legend()
     if metric:
         plt.savefig(f"{output_dir}/histogram-{party.lower()}-{metric}-{flag}.png")
@@ -393,7 +393,8 @@ def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel(f"{party} Percentage", fontsize=12)
-    plt.title(f"{party} Percentage Distribution from {flag.capitalize()} Start", fontsize=14)
+    plt.suptitle(f"{party} Percentage in Commission Districts", fontsize=14)
+    plt.title(f"from {flag.capitalize()} Start")
     plt.legend()
 
     # Save the boxplot
