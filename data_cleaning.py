@@ -274,9 +274,12 @@ print("final_gdf:\n", final_gdf.columns)
 # Select only required columns
 final_columns = ['precinct', 'assembly', 'senate', 'congress', 'geometry'] + list(party_counts.columns.drop('precinct'))
 final_gdf = final_gdf[final_columns]
+
+# Deal with NAs
 final_gdf = final_gdf.rename(columns={
-    '   ': "NaP"
+    '   ': "NaP" # this, to me, stands for Not a Party
 })
+final_gdf = final_gdf.fillna(0)
 print("final_gdf:\n", final_gdf.columns)
 
 # Save the final shapefile
