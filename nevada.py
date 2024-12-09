@@ -319,14 +319,13 @@ ideal_pop = totpop/NUM_DIST
 # are up for reelection each cycle, so I am just going to let it be.
 POP_TOLERANCE = 0.33
 
-def save_histogram(data, enacted_value, level, party, metric, color, flag, output_dir="figs"):
+def save_histogram(data, enacted_value, party, metric, color, flag, output_dir="figs"):
     """
     Saves a histogram for the ensemble data with appropriate styling.
 
     Parameters:
         data (list): Ensemble data for the metric (e.g., plurality or majority).
         enacted_value (int): The value of the metric in the enacted plan.
-        level (str): The district level (e.g., "congress", "assembly").
         party (str): The political party (e.g., "Democratic", "Republican", "Independent").
         metric (str): The metric type (e.g., "plurality", "majority").
         color (str): The color for the histogram (e.g., "blue", "red", "purple").
@@ -345,31 +344,30 @@ def save_histogram(data, enacted_value, level, party, metric, color, flag, outpu
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel("Ensembles", fontsize=12)
     if metric:
-        plt.title(f"{party} {metric.capitalize()} Districts in {level.capitalize()} from {flag.capitalize()} Start", fontsize=14)
+        plt.title(f"{party} {metric.capitalize()} Districts from {flag.capitalize()} Start", fontsize=14)
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
                     label=f"Enacted plan's {metric} = {enacted_value}")
     else:
-        plt.title(f"{party} in {level.capitalize()} from {flag.capitalize()} Start", fontsize=14)
+        plt.title(f"{party} from {flag.capitalize()} Start", fontsize=14)
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
                     label=f"Enacted plan's {party.lower()} = {enacted_value}")
     plt.legend()
     if metric:
-        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{metric}-{level.lower()}-{flag}.png")
+        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{metric}-{flag}.png")
         plt.close()
-        print(f"Saved {output_dir}/histogram-{party.lower()}-{metric}-{level.lower()}-{flag}.png")
+        print(f"Saved {output_dir}/histogram-{party.lower()}-{metric}-{flag}.png")
     else:
-        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{level.lower()}-{flag}.png")
+        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{flag}.png")
         plt.close()
-        print(f"Saved {output_dir}/histogram-{party.lower()}-{level.lower()}-{flag}.png")
+        print(f"Saved {output_dir}/histogram-{party.lower()}-{flag}.png")
 
-def save_boxplot(data, enacted_values, level, party, color, flag, output_dir="figs"):
+def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
     """
     Saves a boxplot for party percentages by district at a given level.
 
     Parameters:
         data (list of lists): Ensemble data for the party percentages across districts.
         enacted_values (list): Enacted plan percentages for the party, one per district.
-        level (str): The district level (e.g., "congress", "assembly").
         party (str): The political party (e.g., "Democratic", "Republican", "Independent").
         color (str): The color for the boxplot (e.g., "blue", "red", "purple").
         flag (str): "random" or "enacted" based on start of ensemble.
@@ -395,11 +393,11 @@ def save_boxplot(data, enacted_values, level, party, color, flag, output_dir="fi
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel(f"{party} Percentage", fontsize=12)
-    plt.title(f"{party} Percentage Distribution by {level.capitalize()} Districts from {flag.capitalize()} Start", fontsize=14)
+    plt.title(f"{party} Percentage Distribution from {flag.capitalize()} Start", fontsize=14)
     plt.legend()
 
     # Save the boxplot
-    filename = f"{output_dir}/boxplot-{party.lower()}-{level.lower()}-{flag}.png"
+    filename = f"{output_dir}/boxplot-{party.lower()}-{flag}.png"
     plt.savefig(filename)
     plt.close()
     print(f"Saved {filename}")
@@ -550,35 +548,33 @@ def run_random_walk(enacted = True):
         "Independent": nppop
     }
     
-    # Generate histograms and boxplots
-    for level in summary_df['level'].unique():
-        # Save the histogram for cutedges
-        save_histogram(cutedge_ensemble, 
-                       summary_df.loc[summary_df['level'] == level, "cutedges"].values[0],
-                       level, "Cutedges", None, "brown", flag)
+    # Save the histogram for cutedges
+    save_histogram(cutedge_ensemble, 
+                   summary_df.loc[summary_df['level'] == 'commission', "cutedges"].values[0],
+                   "Cutedges", None, "brown", flag)
     
-        # Histograms
-        for metric, party_columns in metrics_mapping.items():
-            for party, column in party_columns.items():
-                enacted_value = summary_df.loc[summary_df['level'] == level, column].values[0]
-                # Select the appropriate ensemble data
-                data = d_plu_ensemble if party == "Democratic" and metric == "plurality" else \
-                       d_maj_ensemble if party == "Democratic" and metric == "majority" else \
-                       r_plu_ensemble if party == "Republican" and metric == "plurality" else \
-                       r_maj_ensemble if party == "Republican" and metric == "majority" else \
-                       np_plu_ensemble if party == "Independent" and metric == "plurality" else \
-                       np_maj_ensemble
+    # Histograms
+    for metric, party_columns in metrics_mapping.items():
+        for party, column in party_columns.items():
+            enacted_value = summary_df.loc[summary_df['level'] == 'commission', column].values[0]
+            # Select the appropriate ensemble data
+            data = d_plu_ensemble if party == "Democratic" and metric == "plurality" else \
+                   d_maj_ensemble if party == "Democratic" and metric == "majority" else \
+                   r_plu_ensemble if party == "Republican" and metric == "plurality" else \
+                   r_maj_ensemble if party == "Republican" and metric == "majority" else \
+                   np_plu_ensemble if party == "Independent" and metric == "plurality" else \
+                   np_maj_ensemble
     
-                # Save the histogram
-                save_histogram(data, enacted_value, level, party, metric, party_colors[party], flag)
+            # Save the histogram
+            save_histogram(data, enacted_value, party, metric, party_colors[party], flag)
 
-        # Boxplots
-        for party, data in district_ensemble_data.items():
-            # Get enacted values for the current party and level
-            enacted_values = summary_df.loc[summary_df['level'] == level, f"{party_short[party]}_perc"].values[0]
-            
-            # Save the boxplot
-            save_boxplot(data, enacted_values, level, party, party_colors[party], flag)
+    # Boxplots
+    for party, data in district_ensemble_data.items():
+        # Get enacted values for the current party
+        enacted_values = summary_df.loc[summary_df['level'] == "commission", f"{party_short[party]}_perc"].values[0]
+        
+        # Save the boxplot
+        save_boxplot(data, enacted_values, party, party_colors[party], flag)
 
 run_random_walk()
 run_random_walk(enacted = False)
