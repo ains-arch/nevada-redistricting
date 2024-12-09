@@ -276,9 +276,13 @@ final_columns = ['precinct', 'assembly', 'senate', 'congress', 'geometry'] + lis
 final_gdf = final_gdf[final_columns]
 
 # Deal with NAs
-final_gdf = final_gdf.rename(columns={
-    '   ': "NaP" # this, to me, stands for Not a Party
-})
+# Add counts from '   ' and 'nan' to the 'NP ' column
+final_gdf['NP '] += final_gdf[['   ', 'nan']].sum(axis=1)
+
+# Drop the '   ' and 'nan' columns
+final_gdf = final_gdf.drop(columns=['   ', 'nan'])
+
+# Fill NAs in the party counts
 final_gdf = final_gdf.fillna(0)
 print("final_gdf:\n", final_gdf.columns)
 
