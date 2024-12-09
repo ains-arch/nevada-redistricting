@@ -20,15 +20,8 @@ columns_to_keep = {
     "CONGRESS": "int", 
     "ASSEMBLY": "int", 
     "SENATE": "int", 
+    "COMMISSION": "int",
     "PARTY_REG": "str", 
-    "RES_STREET_NUM": "str", 
-    "RES_DIRECTION": "str", 
-    "RES_STREET_NAME": "str", 
-    "RES_ADDRESS_TYPE": "str", 
-    "RES_UNIT": "str", 
-    "RES_CITY": "str", 
-    "RES_STATE": "str", 
-    "RES_ZIP_CODE": "int", 
     "REGISTRATION_NUM": "int"
 }
 
@@ -252,7 +245,7 @@ print("weird voters:\n", voters_df_filtered[voters_df_filtered['PARTY_REG'] == '
 # precinct_7908 = no_area_gdf[no_area_gdf['PREC'] == 7908]
 
 # Select columns to keep and rename them
-precincts_gdf = precincts_gdf[['PREC', 'ASSEMBLY', 'SENATE', 'CONGRESS', 'geometry']]
+precincts_gdf = precincts_gdf[['PREC', 'ASSEMBLY', 'SENATE', 'CONGRESS', 'COMMISSION', 'geometry']]
 print("precincts_gdf:\n", precincts_gdf.columns)
 
 # Rename columns
@@ -261,6 +254,7 @@ precincts_gdf = precincts_gdf.rename(columns={
     "ASSEMBLY": "assembly",
     "SENATE": "senate",
     "CONGRESS": "congress",
+    "COMMISSION": "commission"
 })
 print("precincts_gdf:\n", precincts_gdf.columns)
 
@@ -272,7 +266,7 @@ final_gdf = precincts_gdf.merge(
 print("final_gdf:\n", final_gdf.columns)
 
 # Select only required columns
-final_columns = ['precinct', 'assembly', 'senate', 'congress', 'geometry'] + list(party_counts.columns.drop('precinct'))
+final_columns = ['precinct', 'assembly', 'senate', 'congress', 'commission', 'geometry'] + list(party_counts.columns.drop('precinct'))
 final_gdf = final_gdf[final_columns]
 
 # Deal with NAs
@@ -285,6 +279,9 @@ final_gdf = final_gdf.drop(columns=['   ', 'nan'])
 # Fill NAs in the party counts
 final_gdf = final_gdf.fillna(0)
 print("final_gdf:\n", final_gdf.columns)
+
+# Sanity check
+assert len(final_gdf) == len(final_gdf['precinct'].unique()), "Duplicated rows detected!"
 
 # Save the final shapefile
 final_gdf_no_geom = final_gdf.drop(columns=['geometry'])
