@@ -4,6 +4,7 @@ import argparse
 import random
 import networkx as nx
 import numpy as np
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
@@ -27,6 +28,7 @@ from gerrychain.accept import always_accept
     # default=100, 
     # help='The total number of steps for the random walk (default: 100)'
 # )
+total_steps = 100
 
 # Parse the arguments
 # args = parser.parse_args()
@@ -37,205 +39,239 @@ from gerrychain.accept import always_accept
 # Set global matplotlib dpi for high quality plots
 # plt.rcParams['savefig.dpi'] = 300
 
-# Set path to shapefile
-PATH = "data/precinct_p_fixed.shp"
-print(f"Shapefile path: {PATH}\n")
-
-# Geodataframe from shapefile
-print("Loading Geodataframe...")
-gdf = gpd.read_file(PATH)
-print("Geodataframe loaded.\n")
-
-# Check total rows and general info
-gdf.info(verbose=True)
-
-# Dual graph from shapefile
-print("Loading Graph...")
+# Load the data
+shapefile_path = "data/aggregated_precincts.shp"
+print("loading shapefile")
+gdf = gpd.read_file(shapefile_path)
+print("shapefile loaded")
+print("loading graph")
 graph = Graph.from_geodataframe(gdf)
-print("Graph loaded.\n")
+print("graph loaded")
+print(f"Is the dual graph connected? {nx.is_connected(graph)}")
+print("gdf:\n", gdf.columns)
 
-print(f"Graph columns: {graph.nodes()[0].keys()}\n")
+# Define a helper function for plotting
+def plot_map(gdf, column, cmap, title, output_path):
+    plt.figure(figsize=(10, 8))
+    ax = gdf.plot(
+        column=column,
+        cmap=cmap,
+        missing_kwds={"color": "gray"},
+        vmin=0, vmax=1,
+        legend=False
+    )
+    plt.axis('off')
+    plt.title(title, fontsize=14)
+    
+    # Create a colorbar
+    if cmap:
+        sm = mpl.cm.ScalarMappable(cmap=cmap, norm=mpl.colors.Normalize(vmin=0, vmax=1))
+        sm.set_array([])
+        cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.01, shrink=0.7)
+        cbar.set_label('Percentage', fontsize=12)
 
-# Check if 'PREC' is unique
-is_unique = gdf['PREC'].is_unique
-print("Is 'PREC' unique?:", is_unique)
-
-# Count unique values in 'PREC'
-unique_count = gdf['PREC'].nunique()
-print("Number of unique 'PREC' values:", unique_count)
-
-# Check for missing values in 'PREC'
-missing_prec = gdf['PREC'].isna().sum()
-print("Number of missing 'PREC' values:", missing_prec)
-
-# Get the most frequent values in 'PREC'
-print("Most frequent 'PREC' values:\n", gdf['PREC'].value_counts().head())
-
-# Get a summary of the GeoDataFrame
-print(gdf.info())
-
-# Check the geometry column
-print("Geometry type counts:\n", gdf.geom_type.value_counts())
-
-print("Geometry type:", gdf['geometry'].geom_type.unique())
+    plt.savefig(output_path)
+    plt.close()
+    print(f"Saved {output_path}")
 
 # Plot precinct shapefile
-plt.figure()
-ax = gdf.plot(
-    column=None,  # No specific column, just the geometry
-    edgecolor='black',
-    linewidth=0.2
-)
+print("plotting shapefile")
+plot_map(gdf, None, None, "Clark County Precincts", "figs/precincts.png")
 
-# Suppress axes and add title
-plt.axis('off')
-plt.title('Clark County Precincts', fontsize=14)
+print("analyzing party")
 
-# Save the figure
-plt.savefig("figs/precincts.png")
-print("\nSaved figs/precincts.png")
+# Calculate total voters per precinct
+gdf['total_voters'] = gdf[['DEM', 'FOR','GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP',
+                           'OTH', 'REF','REP', 'TPN', 'WSP']].sum(axis=1)
 
-print(f"Shapefile columns: {gdf.columns}\n")
-# Shapefile columns: Index(['PREC', 'WARD', 'COMMISSION', 'ASSEMBLY', 'SENATE', 'EDUCATION',
-       # 'REGENT', 'SCHOOL', 'CONGRESS', 'TOWNSHIP', 'POLLING', 'GlobalID',
-       # 'Shape_Leng', 'geometry'],
-      # dtype='object')
-breaaak
+# Calculate percentage columns for each party
+gdf['dem_perc'] = gdf['DEM'] / gdf['total_voters']
+gdf['rep_perc'] = gdf['REP'] / gdf['total_voters']
+gdf['np_perc'] = gdf['NP'] / gdf['total_voters']
+gdf = gdf.fillna(0)
+
+# Plot maps for each party
+plot_map(gdf, 'dem_perc', 'Blues',
+         'Democratic Registration Percentage by Precinct',
+         'figs/dem_perc.png')
+plot_map(gdf, 'rep_perc', 'Reds',
+         'Republican Registration Percentage by Precinct',
+         'figs/rep_perc.png')
+plot_map(gdf, 'np_perc', 'viridis', 
+         'Non-Partisan Registration Percentage by Precinct',
+         'figs/np_perc.png')
+
+# Reloading graph
+print("Loading updated graph...")
+graph = Graph.from_geodataframe(gdf)
+print("graph reloaded")
+print("Updated graph loaded.")
+print(f"Information at nodes: {graph.nodes()[0].keys()}")
+print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
 
 # Print populations
-# hisp = sum(graph.nodes()[v]['HISP'] for v in graph.nodes())
-# print(f"Hispanic Population: {hisp}")
-# totpop = sum(graph.nodes()[v]['TOTPOP'] for v in graph.nodes())
-# print(f"Total Population: {totpop}")
-# print(f"Hispanic percentage: {hisp/totpop:.2%}")
+dempop = sum(graph.nodes()[v]['DEM'] for v in graph.nodes())
+print(f"Democratic voters: {dempop}")
+reppop = sum(graph.nodes()[v]['REP'] for v in graph.nodes())
+print(f"Republican voters: {reppop}")
+nppop = sum(graph.nodes()[v]['NP'] for v in graph.nodes())
+print(f"Nevada independents: {nppop}")
+totpop = sum(graph.nodes()[v]['total_voters'] for v in graph.nodes())
+print(f"Total voters: {totpop}")
+print(f"Democratic percentage: {dempop/totpop:.2%}")
+print(f"Republican percentage: {reppop/totpop:.2%}")
+print(f"Nevada independents percentage: {nppop/totpop:.2%}")
 
-# Add Hispanic percentage from the 2010 Census to the geodataframe
-# gdf['hisp_perc'] = gdf['HISP']/gdf['TOTPOP']
+print("analyzing districts")
 
-# Plot the Hispanic percentage
-# plt.figure()
-# ax = gdf.plot()
-# sm = plt.cm.ScalarMappable(cmap='Oranges', norm=plt.Normalize(vmin=0, vmax=1)) # Custom legend
-# sm.set_array([])
-# cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=-0.01, shrink=0.7)
-# plt.axis('off') # To suppress axes in the map plot
-# plt.title('Hispanic Percentage in 2010 Census', fontsize=14)
-# plt.savefig("hispanic.png")
-# print("\nSaved figs/hispanic.png")
+def calculate_percentages(district_stats, level):
+    """
+    Adds percentage columns for each party to the district stats DataFrame.
+    
+    Parameters:
+        district_stats (DataFrame): Aggregated district statistics.
+        level (str): Level of analysis (e.g., 'congress', 'assembly').
+    
+    Returns:
+        DataFrame: Updated district stats with percentage columns.
+    """
+    print(district_stats)
+    district_stats[f'dem_perc_{level}'] = district_stats['DEM'] / district_stats['total_voters']
+    district_stats[f'rep_perc_{level}'] = district_stats['REP'] / district_stats['total_voters']
+    district_stats[f'np_perc_{level}'] = district_stats['NP'] / district_stats['total_voters']
+    return district_stats
 
-# Add Democratic votes percentage in 2018 US House race to the geodataframe
-gdf['dem_perc'] = gdf["USH18D"]/gdf[["USH18D", "USH18R"]].sum(axis=1)
 
-# Plot the partisan distribution
-plt.figure()
-ax = gdf.plot(column = 'dem_perc', cmap = 'seismic_r', vmin=0, vmax=1)
-sm = plt.cm.ScalarMappable(cmap='seismic_r', norm=plt.Normalize(vmin=0, vmax=1)) # Custom legend
-sm.set_array([])
-cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=-0.01, shrink=0.7)
-cbar.set_label('Percent of Votes', fontsize=12)
-cbar.set_ticks([0, 1])  # Position tick labels at 0 (Republican) and 1 (Democratic)
-cbar.set_ticklabels(['Republican', 'Democratic'])  # Set custom labels
-plt.axis('off') # To suppress axes in the map plot
-plt.title('Votes for US House in 2018 Midterms', fontsize=14)
-plt.savefig("figs/party.png")
-print("Saved figs/party.png\n")
+def calculate_majorities_and_pluralities(district_stats, level, party_col, perc_col):
+    """
+    Calculates plurality and majority counts for a specific party.
+    
+    Parameters:
+        district_stats (DataFrame): Aggregated district statistics.
+        level (str): Level of analysis (e.g., 'congress', 'assembly').
+        party_col (str): Column name for the party's raw vote count.
+        perc_col (str): Column name for the party's vote percentage.
+    
+    Returns:
+        tuple: (plurality_count, majority_count)
+    """
+    plurality_count = (
+        (district_stats[party_col] >= district_stats['DEM']) &
+        (district_stats[party_col] >= district_stats['REP']) &
+        (district_stats[party_col] >= district_stats['NP'])
+    ).sum()
+    majority_count = (district_stats[perc_col] >= 0.5).sum()
+    return plurality_count, majority_count
 
-# Redefine new graph object with the hisp_perc and dem_perc columns
-# print("Loading updated graph...")
-# graph = Graph.from_geodataframe(gdf)
-# print("Updated graph loaded.")
-# print(f"Information at nodes: {graph.nodes()[0].keys()}")
 
-# Create a partition object from the enacted "CD116FP" districting plan
-print("Turning enacted congressional map into a partition...")
-enacted_plan = GeographicPartition(graph,
-                                assignment= "CD116FP",
-                                updaters = {
-                                    "cutedges": cut_edges, 
-                                    }
-                                )
+def analyze_districts(gdf, level, graph, cut_edges):
+    """
+    Analyzes districts at a given level (e.g., 'congress', 'assembly', 'senate').
 
-print("Running aggregation into congressional districts...")
-# Aggregate data using groupby
-district_stats = gdf.groupby('CD116FP').agg({
-    'TOTPOP': 'sum',
-    'HISP': 'sum',
-    'USH18D': 'sum',
-    'USH18R': 'sum'
-}).reset_index()
+    Parameters:
+        gdf (GeoDataFrame): The input geodataframe containing voter data.
+        level (str): The column name representing the level of analysis (e.g., 'congress').
+        graph: Graph object required for GeographicPartition.
+        cut_edges: Function or updater for calculating cut edges.
+    
+    Returns:
+        GeoDataFrame: The original GeoDataFrame with additional percentage columns for the level.
+    """
+    print(f"Turning 2024 {level} map into a partition...")
+    partition = GeographicPartition(
+        graph,
+        assignment=level,
+        updaters={"cutedges": cut_edges},
+    )
 
-# Calculate percentage of Hispanic population and Democratic votes
-district_stats['hisp_perc_cd'] = district_stats['HISP'] / district_stats['TOTPOP']
-district_stats['dem_perc_cd'] = district_stats['USH18D'] / (district_stats['USH18D'] + district_stats['USH18R'])
+    print(f"Running aggregation into {level} districts...")
+    # Aggregate data using groupby
+    district_stats = gdf.groupby(level).agg({
+        'total_voters': 'sum',
+        'DEM': 'sum',
+        'REP': 'sum',
+        'NP': 'sum'
+    }).reset_index()
 
-# Calculate the number of 30%+ Hispanic districts
-hisp_30_enacted = (district_stats['hisp_perc_cd'] >= 0.3).sum()
-print(f"Number of districts with 30% or more Hispanic population: {hisp_30_enacted}")
+    # Add percentage columns
+    district_stats = calculate_percentages(district_stats, level)
 
-# Calculate the number of Democratic districts
-d_votes_enacted = (district_stats['USH18D'] > district_stats['USH18R']).sum()
-print(f"Number of districts Democrats won in 2018 House elections: {d_votes_enacted}")
+    # Calculate plurality and majority counts for each party
+    parties = [
+        ("Democratic", "DEM", f'dem_perc_{level}'),
+        ("Republican", "REP", f'rep_perc_{level}'),
+        ("Nevada Independent", "NP", f'np_perc_{level}'),
+    ]
+    
+    for party_name, party_col, perc_col in parties:
+        plurality, majority = calculate_majorities_and_pluralities(district_stats, level, party_col, perc_col)
+        print(f"  Number of {party_name} plurality districts: {plurality}")
+        print(f"  Number of {party_name} majority districts: {majority}")
 
-# Calculate number of cutedges
-cutedges_enacted = len(enacted_plan['cutedges'])
-print(f"Number of cutedges: {cutedges_enacted}")
+    # Calculate number of cutedges
+    cutedges = len(partition['cutedges'])
+    print(f"  Number of cutedges: {cutedges}")
 
-# Merge the aggregated data back into the GeoDataFrame
-gdf = gdf.merge(district_stats[['CD116FP', 'hisp_perc_cd', 'dem_perc_cd']], on='CD116FP', how='left')
+    # Merge the aggregated data back into the GeoDataFrame
+    percentage_cols = [f'dem_perc_{level}', f'rep_perc_{level}', f'np_perc_{level}']
+    gdf = gdf.merge(district_stats[[level] + percentage_cols], on=level, how='left')
 
-print("Enacted congressional map data manipulation complete.\n")
+    # TODO: change first letter of {level} to an upper case for titles
+    # TODO: outline districts in black
+    # TODO: if that still doesn't look good, turn off requirements for cmap to go [0,1]
 
-# Plot the Hispanic percentage by congressional district
-plt.figure()
-# Use a scale of 0 to 0.3 even though no values are at 0.3 to indicate falling below 30%
-# This value will become important in the ensemble analysis
-ax = gdf.plot(column='hisp_perc_cd', cmap='Oranges', vmin=0, vmax=0.3)
-sm = plt.cm.ScalarMappable(cmap='Oranges', norm=plt.Normalize(vmin=0, vmax=0.3))
-sm.set_array([])
-cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.01, shrink=0.7)
-plt.axis('off') # To suppress axes in the map plot
-plt.title('Hispanic Percentage in 2010 Census by Congressional District', fontsize=14)
-plt.savefig("figs/hispanic_cd.png")
-print("Saved figs/hispanic_cd.png")
+    print("dem perc level", parties[0][2])
+    plot_map(gdf, parties[0][2], 'Blues',
+         f'Democratic Voters Percentage by {level}',
+         f'figs/dem_perc_{level}.png')
 
-# Plot the partisan vote makeup by congressional district
-plt.figure()
-ax = gdf.plot(column='dem_perc_cd', cmap='seismic_r', vmin=0, vmax=1)
-plt.axis('off') # To suppress axes in the map plot
-plt.title('Votes for US House in 2018 Midterms by Congressional District', fontsize=14)
-sm = plt.cm.ScalarMappable(cmap='seismic_r', norm=plt.Normalize(vmin=0, vmax=1)) # Custom legend
-sm.set_array([])
-cbar = plt.colorbar(sm, ax=ax, orientation='horizontal', pad=0.01, shrink=0.7)
-cbar.set_label('Percent of Votes', fontsize=12)
-cbar.set_ticks([0, 1])  # Position tick labels at 0 (Republican) and 1 (Democratic)
-cbar.set_ticklabels(['Republican', 'Democratic'])  # Set custom labels
-plt.savefig("figs/party_cd.png")
-print("Saved figs/party_cd.png")
+    plot_map(gdf, parties[1][2], 'Reds',
+         f'Republican Voters Percentage by {level}',
+         f'figs/rep_perc_{level}.png')
 
-# Plot congressional districts with no coloring
-plt.figure()
-gdf.plot(pd.Series([enacted_plan.assignment[i] for i in gdf.index]), cmap="tab10")
-plt.title('Congressional Districts in 2018', fontsize=14)
-plt.axis('off')
-plt.savefig("figs/2012-congressional-districts.png")
-print("Saved figs/2012-congressional-districts.png\n")
+    plot_map(gdf, parties[2][2], 'viridis',
+         f'Nevada Independent Voters Percentage by {level}',
+         f'figs/np_perc_{level}.png')
+
+    # Reloading graph
+    print("Loading updated graph...")
+    graph = Graph.from_geodataframe(gdf)
+    print("Updated graph loaded.")
+    print(f"Information at nodes: {graph.nodes()[0].keys()}")
+    print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
+
+    return partition, gdf, graph
+
+congress_partition, gdf, graph = analyze_districts(gdf, "congress", graph, cut_edges)
+assembly_partition, gdf, graph = analyze_districts(gdf, "assembly", graph, cut_edges)
+senate_partition, gdf, graph = analyze_districts(gdf, "senate", graph, cut_edges)
+commission_partition, gdf, graph = analyze_districts(gdf, "commission", graph, cut_edges)
+
+print("Enacted maps data manipulation complete.\n")
+print("gdf:\n", gdf.columns)
+
 
 # Make an initial districting plan using recursive_tree_part
 print("Setting up ensemble..")
-NUM_DIST = 7 # for the seven Congressional districts Colorado had in 2018
+NUM_DIST = len(gdf['commission'].unique()) # it's seven, by the way
 ideal_pop = totpop/NUM_DIST
-POP_TOLERANCE = 0.02
+# This is really high because voter turnout varied a ton between commission districts
+# If you're curious, the real population variance in the districts is 1-316k/364k = 0.132
+# Which is still high, but less so? There also isn't a 1:1 map of pop to turnout in order
+# A lot of things affect why people turn out in their districts, and not all of the commissioners
+# are up for reelection each cycle, so I am just going to let it be.
+POP_TOLERANCE = 0.33
 
 def run_random_walk(enacted = True):
     if enacted:
         flag = "enacted"
-        initial_plan = "CD116FP"
+        initial_plan = "commission"
     else:
         flag = "random"
         initial_plan = recursive_tree_part(graph,
                                            range(NUM_DIST),
                                            ideal_pop,
-                                           'TOTPOP',
+                                           'total_voters',
                                            POP_TOLERANCE,
                                            10)
 
@@ -254,16 +290,16 @@ def run_random_walk(enacted = True):
         assignment = initial_plan, # initial districting plan
         updaters = {
             "cutedges": cut_edges, 
-            "population": Tally("TOTPOP", alias = "population"), 
-            "Hispanic population": Tally("HISP", alias = "Hispanic population"),
-            "R votes": Tally("USH18R", alias = "R votes"),
-            "D votes": Tally("USH18D", alias = "D votes")
+            "totpop": Tally("total_voters", alias = "totpop"), 
+            "dempop": Tally("DEM", alias = "dempop"),
+            "reppop": Tally("REP", alias = "reppop"),
+            "nppop": Tally("NP", alias = "nppop"),
         }
     )
     
     # Set up random walk
     rw_proposal = partial(recom,                   # How you choose a next districting plan
-                          pop_col = "TOTPOP",      # What data describes population
+                          pop_col = "total_voters",# What data describes population
                           pop_target = ideal_pop,  # Target/ideal population is for each district
                           epsilon = POP_TOLERANCE, # How far from ideal population you can deviate
                           node_repeats = 1         # Number of times to repeat bipartition.
@@ -273,7 +309,7 @@ def run_random_walk(enacted = True):
     population_constraint = constraints.within_percent_of_ideal_population(
             initial_partition,
             POP_TOLERANCE,
-            pop_key = "population"
+            pop_key = "totpop"
             )
     
     # Set up the chain
@@ -289,36 +325,72 @@ def run_random_walk(enacted = True):
     print(f"Running random walk from {flag} start...")
     cutedge_ensemble = []
     if flag == "enacted": # Skip calculating Hispanic and Democratic ensembles for random start
-        h30_ensemble = []
-        d_ensemble = []
-        hpop = []
+        d_plu_ensemble = []
+        d_maj_ensemble = []
+        dempop = []
+        r_plu_ensemble = []
+        r_maj_ensemble = []
+        reppop = []
+        np_plu_ensemble = []
+        np_maj_ensemble = []
+        nppop = []
     
     for part in our_random_walk:
         # Add cutedges to cutedges ensemble
         cutedge_ensemble.append(len(part["cutedges"]))
     
         if flag == "enacted": # Run the full ensemble for the enacted plan
-            hisp_30 = 0
-            d_votes = 0
-            hpop_this_step = []
+            d_plu = 0
+            r_plu = 0
+            np_plu = 0
+            d_maj = 0
+            r_maj = 0
+            np_maj = 0
+            dempop_this_step = []
+            reppop_this_step = []
+            nppop_this_step = []
 
             for district in part.parts:
-                # 30%+ Hispanic districts from US Census
-                h_perc = part["Hispanic population"][district]/part["population"][district]
-                if h_perc > 0.3:
-                    hisp_30 += 1
-                hpop_this_step.append(h_perc)
+                d_perc = part["dempop"][district]/part["totpop"][district]
+                dempop_this_step.append(d_perc)
+                r_perc = part["reppop"][district]/part["totpop"][district]
+                reppop_this_step.append(r_perc)
+                np_perc = part["nppop"][district]/part["totpop"][district]
+                nppop_this_step.append(np_perc)
 
-                # Districts with more D votes than R votes in 2018 US House race
-                if part["D votes"][district] > part["R votes"][district]:
-                    d_votes += 1
+                # plurality districts
+                if d_perc >= r_perc and d_perc >= np_perc:
+                    d_plu += 1
+                if r_perc >= d_perc and r_perc >= np_perc:
+                    r_plu += 1
+                if np_perc >= d_perc and np_perc >= r_perc:
+                    np_plu += 1
 
-            h30_ensemble.append(hisp_30)
-            hpop_this_step.sort()
-            hpop.append(hpop_this_step)
-            d_ensemble.append(d_votes)
+                # majority districts
+                if d_perc >= 0.5:
+                    d_maj += 1
+                if r_perc >= 0.5:
+                    r_maj += 1
+                if np_perc >= 0.5:
+                    np_maj += 1
+
+            d_plu_ensemble.append(d_plu)
+            d_maj_ensemble.append(d_maj)
+            dempop_this_step.sort()
+            dempop.append(dempop_this_step)
+
+            r_plu_ensemble.append(r_plu)
+            r_maj_ensemble.append(r_maj)
+            reppop_this_step.sort()
+            reppop.append(reppop_this_step)
+
+            np_plu_ensemble.append(np_plu)
+            np_maj_ensemble.append(np_maj)
+            nppop_this_step.sort()
+            nppop.append(nppop_this_step)
     
     print("Random walk complete.\n")
+    breaaak
     
     # Histogram of number of cutedges in 2018 voting precincts
     plt.figure()
