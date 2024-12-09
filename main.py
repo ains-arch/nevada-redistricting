@@ -388,7 +388,7 @@ def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
 
     # Overlay the enacted plan as a scatter plot
     plt.scatter(x=range(1, len(enacted_values_sorted) + 1), y=enacted_values_sorted, 
-                color="red", label="Enacted plan", zorder=2)
+                color="yellow", label="Enacted plan", zorder=2)
 
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)

@@ -108,6 +108,7 @@ print("\nEnd maup doctor on unrepaired\n")
 
 # Plot original gdf
 original_gdf.plot()
+plt.title(f"original_gdf.png")
 plt.savefig("figs/original_gdf.png")
 print("Saved figs/original_gdf.png\n")
 
@@ -136,6 +137,7 @@ print(f"Number of Edges: {len(graph.edges())}\n")
 
 # Plot repair one
 repaired_gdf.plot()
+plt.title(f"repaired_gdf.png")
 plt.savefig("figs/repaired.png")
 print("Saved figs/repaired.png\n")
 
@@ -181,6 +183,7 @@ precincts_gdf['Shape_Leng'] = precincts_gdf['geometry'].length
 
 # Plot the updated GeoDataFrame
 precincts_gdf.plot()
+plt.title(f"precincts_gdf.png")
 plt.savefig("figs/merged.png")
 print("\nSaved figs/merged.png")
 
