@@ -287,7 +287,3 @@ assert len(final_gdf) == len(final_gdf['precinct'].unique()), "Duplicated rows d
 final_gdf_no_geom = final_gdf.drop(columns=['geometry'])
 final_gdf_no_geom.to_csv("data/aggregated_precincts.csv", index=False)
 final_gdf.to_file("data/aggregated_precincts.shp")
-
-# Optional: print summary of party registration and voting methods
-print("Party registration counts per precinct:")
-print(party_counts.sum(axis=0))
