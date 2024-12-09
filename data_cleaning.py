@@ -8,6 +8,7 @@ import maup
 from maup import smart_repair, resolve_overlaps
 from shapely.ops import unary_union
 
+### CLEANING AND MERGING REGISTRATION AND 2024 VOTERFILE ###
 print("CSV CLEANING AND MERGING")
 
 # Define chunk size for reading in pieces
@@ -83,15 +84,15 @@ for i in range(0, len(cleaned_df), CHUNK_SIZE):
     merged_chunks.append(merged_chunk)
 
 # Concatenate all merged chunks into a single DataFrame
-final_df = pd.concat(merged_chunks, ignore_index=True)
+voters_df = pd.concat(merged_chunks, ignore_index=True)
 
 # Save the result to a new CSV
-final_df.to_csv('data/filtered_voters.csv', index=False)
+voters_df.to_csv('data/filtered_voters.csv', index=False)
 print("Filtered join completed and saved to 'filtered_voters.csv'.")
 
 # Final preview
-print(final_df.head())
-print(final_df.tail())
+print(voters_df.head())
+print(voters_df.tail())
 
 ### PRECINCT SHAPEFILE ###
 print("\nPRECINCT SHAPEFILE CLEANING")
@@ -172,32 +173,117 @@ merged_geometry = precinct_7908.geometry.unary_union
 print("Done unioning weird precinct")
 
 # Update the GeoDataFrame with the merged geometry (keep other attributes intact)
-merged_gdf = no_area_gdf.copy()
+precincts_gdf = no_area_gdf.copy()
 print("Merge unioned weird precinct with gdf")
-merged_gdf.loc[merged_gdf['PREC'] == 7908, 'geometry'] = merged_geometry
+precincts_gdf.loc[precincts_gdf['PREC'] == 7908, 'geometry'] = merged_geometry
 print("Weird precinct merged back in")
 
 # Deal with duplicate
-duplicates = merged_gdf[merged_gdf['PREC'] == 7908]
+duplicates = precincts_gdf[precincts_gdf['PREC'] == 7908]
 print("Now we have duplicates:\n", duplicates)
 print("Drop duplicate")
-merged_gdf = merged_gdf.drop(index=duplicates.index[1])  # Drop the second instance
+precincts_gdf = precincts_gdf.drop(index=duplicates.index[1])  # Drop the second instance
 print("Recalculate Shape_Leng")
-merged_gdf['Shape_Leng'] = merged_gdf['geometry'].length
+precincts_gdf['Shape_Leng'] = precincts_gdf['geometry'].length
 
 # Plot the updated GeoDataFrame
-merged_gdf.plot()
+precincts_gdf.plot()
 plt.savefig("figs/merged.png")
 print("\nSaved figs/merged.png")
 
 # Use maup to ensure all geometries are valid
 print("\nmaup doctor on merged gdf")
-maup.doctor(merged_gdf)
+maup.doctor(precincts_gdf)
 print("End maup doctor on merged gdf")
 
 # Check dual graph
 print("\nGraph sanity check merged gdf")
-graph = Graph.from_geodataframe(merged_gdf)
+graph = Graph.from_geodataframe(precincts_gdf)
+print(f"Graph columns: {graph.nodes()[0].keys()}\n")
+print(f"Is the dual graph connected? {nx.is_connected(graph)}")
 
 # Save the repaired shapefile
-merged_gdf.to_file("data/precinct_p_fixed.shp")
+precincts_gdf.to_file("data/precinct_p_fixed.shp")
+
+### ADDING VOTERFILE INFO TO PRECINCT SHAPEFILE ###
+print("VOTERFILE & PRECINCT SHAPEFILE")
+
+# Read in voterfile
+# voters_df = pd.read_csv("data/filtered_voters.csv")
+print("voters_df:\n", voters_df.columns)
+# precincts_gdf = gpd.read_file("data/precinct_p_fixed.shp")
+print("precincts_gdf:\n", precincts_gdf.columns)
+
+# Check for unique PREC in both datasets
+print("Number of unique precincts in precincts_gdf:", len(precincts_gdf['PREC'].unique()))
+print("Number of unique precincts in voters_df:", len(voters_df['PRECINCT'].unique()))
+
+# Identify missing precincts in either dataset
+precincts_missing_voters = set(precincts_gdf['PREC']) - set(voters_df['PRECINCT'])
+voters_missing_precincts = set(voters_df['PRECINCT']) - set(precincts_gdf['PREC'])
+
+print("Number of precincts in shapefile but not in CSV:", len(precincts_missing_voters))
+# This is expected to be high, because there are plenty of precincts with very low/no pop
+# There are 195 precincts without any people who voted in 2024
+
+print("Precincts in CSV but not in shapefile:", voters_missing_precincts)
+# This should be very low, because every voter should have a precinct
+# Voters without a precinct are assigned precinct "9996", and also don't have assigned districts
+
+# Thus, we will remove those 37 voters out of our analysis as they aren't spatially located
+voters_df_filtered = voters_df[voters_df['PRECINCT'].isin(precincts_gdf['PREC'])]
+print(f"Filtered voter records: {len(voters_df_filtered)}")
+print("voters_df_filtered:\n", voters_df_filtered.columns)
+
+# Aggregate voter data
+party_counts = (
+    voters_df_filtered
+    .groupby(['PRECINCT', 'PARTY_REG'])
+    .size()
+    .unstack(fill_value=0)
+    .reset_index()
+)
+party_counts.rename(columns={'PRECINCT': 'precinct'}, inplace=True)
+
+# Merge aggregated data with the shapefile
+print("party_counts:\n", party_counts.columns)
+print("weird column:", party_counts['   '].unique())
+print("weird voters:\n", voters_df_filtered[voters_df_filtered['PARTY_REG'] == '   '])
+# precinct_7908 = no_area_gdf[no_area_gdf['PREC'] == 7908]
+
+# Select columns to keep and rename them
+precincts_gdf = precincts_gdf[['PREC', 'ASSEMBLY', 'SENATE', 'CONGRESS', 'geometry']]
+print("precincts_gdf:\n", precincts_gdf.columns)
+
+# Rename columns
+precincts_gdf = precincts_gdf.rename(columns={
+    "PREC": "precinct",
+    "ASSEMBLY": "assembly",
+    "SENATE": "senate",
+    "CONGRESS": "congress",
+})
+print("precincts_gdf:\n", precincts_gdf.columns)
+
+final_gdf = precincts_gdf.merge(
+    party_counts,
+    on="precinct",
+    how="left"
+)
+print("final_gdf:\n", final_gdf.columns)
+
+# Select only required columns
+final_columns = ['precinct', 'assembly', 'senate', 'congress', 'geometry'] + list(party_counts.columns.drop('precinct'))
+final_gdf = final_gdf[final_columns]
+final_gdf = final_gdf.rename(columns={
+    '   ': "NaP"
+})
+print("final_gdf:\n", final_gdf.columns)
+
+# Save the final shapefile
+final_gdf_no_geom = final_gdf.drop(columns=['geometry'])
+final_gdf_no_geom.to_csv("data/aggregated_precincts.csv", index=False)
+final_gdf.to_file("data/aggregated_precincts.shp")
+
+# Optional: print summary of party registration and voting methods
+print("Party registration counts per precinct:")
+print(party_counts.sum(axis=0))
