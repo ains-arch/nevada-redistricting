@@ -10,7 +10,7 @@ dill==0.3.9
 fastjsonschema==2.20.0
 fiona==1.9.5
 fonttools==4.53.1
-geopandas==1.0.1
+geopandas==0.14.4
 gerrychain==0.3.2
 isort==5.13.2
 jsonschema==4.23.0
@@ -20,6 +20,7 @@ jupytext==1.16.4
 kiwisolver==1.4.7
 markdown-it-py==3.0.0
 matplotlib==3.9.2
+maup==2.0.2
 mccabe==0.7.0
 mdit-py-plugins==0.4.2
 mdurl==0.1.2
@@ -44,6 +45,7 @@ shapely==2.0.2
 six==1.16.0
 tomli==2.0.1
 tomlkit==0.13.2
+tqdm==4.67.1
 traitlets==5.14.3
 typing_extensions==4.12.2
 tzdata==2024.1
