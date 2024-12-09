@@ -163,8 +163,7 @@ def calculate_majorities_and_pluralities(district_stats, level, party_col, perc_
     majority_count = (district_stats[perc_col] >= 0.5).sum()
     return plurality_count, majority_count
 
-
-def analyze_districts(gdf, level, graph, cut_edges):
+def analyze_districts(gdf, level, graph, cut_edges, summary_df=None):
     """
     Analyzes districts at a given level (e.g., 'congress', 'assembly', 'senate').
 
@@ -173,9 +172,14 @@ def analyze_districts(gdf, level, graph, cut_edges):
         level (str): The column name representing the level of analysis (e.g., 'congress').
         graph: Graph object required for GeographicPartition.
         cut_edges: Function or updater for calculating cut edges.
+        summary_df (DataFrame): Optional DataFrame to append results for all levels.
     
     Returns:
-        GeoDataFrame: The original GeoDataFrame with additional percentage columns for the level.
+        tuple: (partition, GeoDataFrame, Graph, DataFrame)
+            partition: Updated partition.
+            gdf: GeoDataFrame with percentage columns for the level.
+            graph: Updated graph object.
+            summary_df: DataFrame containing the calculated summary statistics.
     """
     print(f"Turning 2024 {level} map into a partition...")
     partition = GeographicPartition(
@@ -203,8 +207,13 @@ def analyze_districts(gdf, level, graph, cut_edges):
         ("Nevada Independent", "NP", f'np_perc_{level}'),
     ]
     
+    plurality_counts = {}
+    majority_counts = {}
+    
     for party_name, party_col, perc_col in parties:
         plurality, majority = calculate_majorities_and_pluralities(district_stats, level, party_col, perc_col)
+        plurality_counts[party_name] = plurality
+        majority_counts[party_name] = majority
         print(f"  Number of {party_name} plurality districts: {plurality}")
         print(f"  Number of {party_name} majority districts: {majority}")
 
@@ -216,22 +225,37 @@ def analyze_districts(gdf, level, graph, cut_edges):
     percentage_cols = [f'dem_perc_{level}', f'rep_perc_{level}', f'np_perc_{level}']
     gdf = gdf.merge(district_stats[[level] + percentage_cols], on=level, how='left')
 
-    # TODO: change first letter of {level} to an upper case for titles
-    # TODO: outline districts in black
-    # TODO: if that still doesn't look good, turn off requirements for cmap to go [0,1]
+    # Update summary DataFrame
+    if summary_df is None:
+        summary_df = pd.DataFrame()
 
-    print("dem perc level", parties[0][2])
+    summary_entry = pd.DataFrame([{
+        "level": level,
+        "cutedges": cutedges,
+        "dem_perc": district_stats[f"dem_perc_{level}"],
+        "rep_perc": district_stats[f"rep_perc_{level}"],
+        "np_perc": district_stats[f"np_perc_{level}"],
+        "dem_plurality": plurality_counts["Democratic"],
+        "rep_plurality": plurality_counts["Republican"],
+        "np_plurality": plurality_counts["Nevada Independent"],
+        "dem_majority": majority_counts["Democratic"],
+        "rep_majority": majority_counts["Republican"],
+        "np_majority": majority_counts["Nevada Independent"],
+        }])
+    summary_df = pd.concat([summary_df, summary_entry], ignore_index=True)
+
+    # Plot maps
     plot_map(gdf, parties[0][2], 'Blues',
-         f'Democratic Voters Percentage by {level}',
-         f'figs/dem_perc_{level}.png')
+             f'Democratic Voters Percentage by {level}',
+             f'figs/dem_perc_{level}.png')
 
     plot_map(gdf, parties[1][2], 'Reds',
-         f'Republican Voters Percentage by {level}',
-         f'figs/rep_perc_{level}.png')
+             f'Republican Voters Percentage by {level}',
+             f'figs/rep_perc_{level}.png')
 
     plot_map(gdf, parties[2][2], 'viridis',
-         f'Nevada Independent Voters Percentage by {level}',
-         f'figs/np_perc_{level}.png')
+             f'Nevada Independent Voters Percentage by {level}',
+             f'figs/np_perc_{level}.png')
 
     # Reloading graph
     print("Loading updated graph...")
@@ -240,12 +264,18 @@ def analyze_districts(gdf, level, graph, cut_edges):
     print(f"Information at nodes: {graph.nodes()[0].keys()}")
     print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
 
-    return partition, gdf, graph
+    return partition, gdf, graph, summary_df
 
-congress_partition, gdf, graph = analyze_districts(gdf, "congress", graph, cut_edges)
-assembly_partition, gdf, graph = analyze_districts(gdf, "assembly", graph, cut_edges)
-senate_partition, gdf, graph = analyze_districts(gdf, "senate", graph, cut_edges)
-commission_partition, gdf, graph = analyze_districts(gdf, "commission", graph, cut_edges)
+# Initialize summary DataFrame
+summary_df = None
+
+# Analyze districts at different levels
+for level in ['congress', 'assembly', 'senate', 'commission']:
+    partition, gdf, graph, summary_df = analyze_districts(gdf, level, graph, cut_edges, summary_df)
+
+# Access the summary data for specific levels or statistics
+print(summary_df)
+summary_df.to_csv("data/summary.csv", index=False)
 
 print("Enacted maps data manipulation complete.\n")
 print("gdf:\n", gdf.columns)
@@ -261,6 +291,94 @@ ideal_pop = totpop/NUM_DIST
 # A lot of things affect why people turn out in their districts, and not all of the commissioners
 # are up for reelection each cycle, so I am just going to let it be.
 POP_TOLERANCE = 0.33
+
+def save_histogram(data, enacted_value, level, party, metric, color, flag, output_dir="figs"):
+    """
+    Saves a histogram for the ensemble data with appropriate styling.
+
+    Parameters:
+        data (list): Ensemble data for the metric (e.g., plurality or majority).
+        enacted_value (int): The value of the metric in the enacted plan.
+        level (str): The district level (e.g., "congress", "assembly").
+        party (str): The political party (e.g., "Democratic", "Republican", "Independent").
+        metric (str): The metric type (e.g., "plurality", "majority").
+        color (str): The color for the histogram (e.g., "blue", "red", "purple").
+        flag (str): "random" or "enacted" based on start of ensemble.
+        output_dir (str): Directory to save the plots.
+    """
+    min_value = min(data)
+    max_value = max(data)
+    bins = np.arange(min_value - 0.5, max_value + 1.5, 1)  # Integer bins
+    if metric:
+        ticks = np.arange(min_value, max_value + 1, 1)
+    plt.figure()
+    plt.hist(data, bins=bins, edgecolor='black', color=color)
+    if metric:
+        plt.xticks(ticks)
+    plt.xlabel("Districts", fontsize=12)
+    plt.ylabel("Ensembles", fontsize=12)
+    if metric:
+        plt.title(f"{party} {metric.capitalize()} Districts in {level.capitalize()} from {flag.capitalize()} Start", fontsize=14)
+        plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
+                    label=f"Enacted plan's {metric} = {enacted_value}")
+    else:
+        plt.title(f"{party} in {level.capitalize()} Level", fontsize=14)
+        plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
+                    label=f"Enacted plan's {party.lower()} = {enacted_value}")
+    plt.legend()
+    if metric:
+        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{metric}-{level.lower()}-{flag}.png")
+        plt.close()
+        print(f"Saved {output_dir}/histogram-{party.lower()}-{metric}-{level.lower()}-{flag}.png")
+    else:
+        plt.savefig(f"{output_dir}/histogram-{party.lower()}-{level.lower()}-{flag}.png")
+        plt.close()
+        print(f"Saved {output_dir}/histogram-{party.lower()}-{level.lower()}-{flag}.png")
+
+def save_boxplot(data, enacted_values, level, party, color, output_dir="figs"):
+    """
+    Saves a boxplot for party percentages by district at a given level.
+
+    Parameters:
+        data (list of lists): Ensemble data for the party percentages across districts.
+        enacted_values (list): Enacted plan percentages for the party, one per district.
+        level (str): The district level (e.g., "congress", "assembly").
+        party (str): The political party (e.g., "Democratic", "Republican", "Independent").
+        color (str): The color for the boxplot (e.g., "blue", "red", "purple").
+        output_dir (str): Directory to save the plots.
+    """
+    print(f"DEBUG: data: {data}")
+    a = np.array(data)
+    print(f"DEBUG: a: {a}")
+    # Sort enacted values for better visualization
+    print(f"DEBUG: enacted_values: {enacted_values}")
+    enacted_values_sorted = sorted(enacted_values)
+    print(f"DEBUG: enacted_values_sorted: {enacted_values_sorted}")
+
+    # Create the boxplot
+    plt.figure()
+    plt.boxplot(a, patch_artist=True, 
+                boxprops=dict(facecolor=color, color='black'),
+                medianprops=dict(color='blue', linewidth=2),
+                whiskerprops=dict(color='black', linewidth=1),
+                capprops=dict(color='black', linewidth=1),
+                zorder=1)
+
+    # Overlay the enacted plan as a scatter plot
+    plt.scatter(x=range(1, len(enacted_values_sorted) + 1), y=enacted_values_sorted, 
+                color="red", label="Enacted plan", zorder=2)
+
+    # Add title, labels, and legend
+    plt.xlabel("Districts", fontsize=12)
+    plt.ylabel(f"{party} Percentage", fontsize=12)
+    plt.title(f"{party} Percentage Distribution by {level.capitalize()} Districts", fontsize=14)
+    plt.legend()
+
+    # Save the boxplot
+    filename = f"{output_dir}/boxplot-{party.lower()}-{level.lower()}.png"
+    plt.savefig(filename)
+    plt.close()
+    print(f"Saved {filename}")
 
 def run_random_walk(enacted = True):
     if enacted:
@@ -324,7 +442,7 @@ def run_random_walk(enacted = True):
     # Run the random walk
     print(f"Running random walk from {flag} start...")
     cutedge_ensemble = []
-    if flag == "enacted": # Skip calculating Hispanic and Democratic ensembles for random start
+    if flag == "random": # Skip calculating partisan ensembles for plan start
         d_plu_ensemble = []
         d_maj_ensemble = []
         dempop = []
@@ -339,7 +457,7 @@ def run_random_walk(enacted = True):
         # Add cutedges to cutedges ensemble
         cutedge_ensemble.append(len(part["cutedges"]))
     
-        if flag == "enacted": # Run the full ensemble for the enacted plan
+        if flag == "random": # Run the full ensemble for the random plan
             d_plu = 0
             r_plu = 0
             np_plu = 0
@@ -390,95 +508,105 @@ def run_random_walk(enacted = True):
             nppop.append(nppop_this_step)
     
     print("Random walk complete.\n")
-    breaaak
-    
-    # Histogram of number of cutedges in 2018 voting precincts
-    plt.figure()
-    plt.hist(cutedge_ensemble, edgecolor='black', color='purple')
-    plt.xlabel("Cutedges", fontsize=12)
-    plt.ylabel("Ensembles", fontsize=12)
-    plt.suptitle("Cutedges in 2018 Voting Precincts",
-              fontsize=14)
-    plt.title(f"from {flag} start")
-    plt.xlim(400, 850)  # Set x and y ranges so enacted-start and random-start ensembles
-    plt.ylim(0, 3000)   # Are one-to-one comparisons
-    plt.axvline(x=cutedges_enacted, color='orange', linestyle='--', linewidth=2,
-                label=f"Enacted plan's cutedges = {cutedges_enacted}")
-    plt.legend()
-    plt.savefig(f"figs/histogram-cutedges-from-{flag}.png")
-    print(f"Saved figs/histogram-cutedges-from-{flag}.png")
-    if flag == "random":
-        print("Random initial plan complete, terminating visualization early.")
-        return
-    
-    # Histogram of number of Hispanic-30%+ districts from 2010 Census numbers
-    plt.figure()
-    plt.hist(h30_ensemble)
-    plt.savefig("figs/histogram-hispanic.png")
-    print("Saved figs/histogram-hispanic.png")
-    
-    # Specify boundaries between bins to make plot look a bit nicer
-    plt.figure()
-    plt.hist(h30_ensemble, bins=[-0.5, 0.5, 1.5, 2.5], edgecolor='black', color='orange')
-    plt.xticks([0, 1, 2])
-    plt.xlabel("Districts", fontsize=12)
-    plt.ylabel("Ensembles", fontsize=12)
-    plt.axvline(x=hisp_30_enacted, color='blue', linestyle='--', linewidth=2,
-                label=f"Enacted plan's Hispanic population = {hisp_30_enacted}")
-    plt.legend()
-    plt.title("Districts with >30% Hispanic Population in 2010 Census",
-              fontsize=14)
-    plt.savefig("figs/histogram-hispanic-clean.png")
-    print("Saved figs/histogram-hispanic-clean.png. You should double check the bins.")
-    
-    # Histogram of number of Democratic districts in US House race
-    plt.figure()
-    plt.hist(d_ensemble)
-    plt.savefig("figs/histogram-democrats.png")
-    print("Saved figs/histogram-democrats.png")
-    
-    # Specify boundaries between bins to make plot look a bit nicer
-    plt.figure()
-    plt.hist(d_ensemble, bins=[2.5, 3.5, 4.5, 5.5, 6.5], edgecolor='black', color='blue')
-    plt.xticks([3, 4, 5, 6])
-    plt.xlabel("Districts", fontsize=12)
-    plt.ylabel("Ensembles", fontsize=12)
-    plt.axvline(x=d_votes_enacted, color='orange', linestyle='--', linewidth=2,
-                label=f"Enacted plan's Democratic districts = {d_votes_enacted}")
-    plt.legend()
-    plt.title("Democratic Districts in the 2018 Midterm Elections", fontsize=14)
-    plt.savefig("figs/histogram-democrats-clean.png")
-    print("Saved figs/histogram-democrats-clean.png. You should double check the bins.\n")
 
-    # Make bopxlot
-    a = np.array(hpop)
-    district_stats_sorted = district_stats.sort_values('hisp_perc_cd')
-    sorted_hpop = district_stats_sorted['hisp_perc_cd'].values
-    plt.figure()
-    plt.boxplot(a)
-    plt.scatter(x = range(1, NUM_DIST + 1), y=sorted_hpop, color="red")
-    plt.savefig("figs/boxplot-hispanic.png")
+    # Color mapping for parties
+    party_colors = {"Democratic": "blue", "Republican": "red", "Independent": "purple"}
 
-    plt.figure()
-    plt.boxplot(a, patch_artist=True, 
-            boxprops=dict(facecolor='orange', color='black'),
-            medianprops=dict(color='blue', linewidth=2),
-            whiskerprops=dict(color='black', linewidth=1),
-            capprops=dict(color='black', linewidth=1),
-            zorder=1)
-    plt.scatter(x=range(1, NUM_DIST + 1), y=sorted_hpop, color="red", label="Enacted plan",
-                zorder=2)
-    plt.axhline(y=0.3, color='blue', linestyle='--', linewidth=2, label="30% threshold")
-    plt.xticks(range(1, NUM_DIST + 1), fontsize=12)
-    plt.yticks(fontsize=12)
-    plt.xlabel("Districts", fontsize=12)
-    plt.ylabel("Hispanic Percentage", fontsize=12)
-    plt.title("Hispanic Population Distribution by District", fontsize=14)
-    plt.legend()
-    plt.savefig("figs/boxplot-hispanic-styled.png")
+    # Shorthand
+    party_short = {"Democratic": "dem", "Republican": "rep", "Independent": "np"}
+    
+    # Map summary_df columns to metrics
+    metrics_mapping = {
+        "plurality": {"Democratic": "dem_plurality", "Republican": "rep_plurality", "Independent": "np_plurality"},
+        "majority": {"Democratic": "dem_majority", "Republican": "rep_majority", "Independent": "np_majority"}
+    }
+    
+    if flag == "random":  # Only continue with full ensemble if 'random' flag
+        # Party data for boxplots
+        district_ensemble_data = {
+            "Democratic": dempop,
+            "Republican": reppop,
+            "Independent": nppop
+        }
+    
+    # Generate histograms and boxplots
+    for level in summary_df['level'].unique():
+        # Save the histogram for cutedges
+        save_histogram(cutedge_ensemble, 
+                       summary_df.loc[summary_df['level'] == level, "cutedges"].values[0],
+                       level, "Cutedges", None, "brown", flag)
+    
+        if flag == "random":  # Only continue with full ensemble if 'random' flag
+            # Histograms
+            for metric, party_columns in metrics_mapping.items():
+                for party, column in party_columns.items():
+                    enacted_value = summary_df.loc[summary_df['level'] == level, column].values[0]
+                    # Select the appropriate ensemble data
+                    data = d_plu_ensemble if party == "Democratic" and metric == "plurality" else \
+                           d_maj_ensemble if party == "Democratic" and metric == "majority" else \
+                           r_plu_ensemble if party == "Republican" and metric == "plurality" else \
+                           r_maj_ensemble if party == "Republican" and metric == "majority" else \
+                           np_plu_ensemble if party == "Independent" and metric == "plurality" else \
+                           np_maj_ensemble
+    
+                    # Save the histogram
+                    save_histogram(data, enacted_value, level, party, metric, party_colors[party], flag)
+
+            # Boxplots
+            for party, data in district_ensemble_data.items():
+                # Get enacted values for the current party and level
+                print(summary_df)
+                enacted_values = summary_df.loc[summary_df['level'] == level, f"{party_short[party]}_perc"].values[0]
+                print(f"DEBUG: enacted_values: {enacted_values}")
+                
+                # Save the boxplot
+                save_boxplot(data, enacted_values, level, party, party_colors[party])
+
+    # Use summary_df to dynamically retrieve the enacted values
+    # for level in summary_df['level'].unique():
+        # for metric, party_columns in metrics_mapping.items():
+            # for party, column in party_columns.items():
+                # # Get the enacted values for the current combination
+                # enacted_values = summary_df.loc[summary_df['level'] == level, column].values[0]
+                # enacted_values_list = enacted_values if isinstance(enacted_values, list) else [enacted_values]
+    
+                # Select the corresponding ensemble data
+                # data = district_ensemble_data[party]
+    
+                # Save the boxplot
+                # save_boxplot(data, enacted_values_list, level, party, metric, party_colors[party])
+
+    # # Make bopxlot
+    # a = np.array(hpop)
+    # district_stats_sorted = district_stats.sort_values('hisp_perc_cd')
+    # sorted_hpop = district_stats_sorted['hisp_perc_cd'].values
+    # plt.figure()
+    # plt.boxplot(a)
+    # plt.scatter(x = range(1, NUM_DIST + 1), y=sorted_hpop, color="red")
+    # plt.savefig("figs/boxplot-hispanic.png")
+
+    # plt.figure()
+    # plt.boxplot(a, patch_artist=True, 
+    #         boxprops=dict(facecolor='orange', color='black'),
+    #         medianprops=dict(color='blue', linewidth=2),
+    #         whiskerprops=dict(color='black', linewidth=1),
+    #         capprops=dict(color='black', linewidth=1),
+    #         zorder=1)
+    # plt.scatter(x=range(1, NUM_DIST + 1), y=sorted_hpop, color="red", label="Enacted plan",
+    #             zorder=2)
+    # plt.axhline(y=0.3, color='blue', linestyle='--', linewidth=2, label="30% threshold")
+    # plt.xticks(range(1, NUM_DIST + 1), fontsize=12)
+    # plt.yticks(fontsize=12)
+    # plt.xlabel("Districts", fontsize=12)
+    # plt.ylabel("Hispanic Percentage", fontsize=12)
+    # plt.title("Hispanic Population Distribution by District", fontsize=14)
+    # plt.legend()
+    # plt.savefig("figs/boxplot-hispanic-styled.png")
 
 run_random_walk()
 run_random_walk(enacted = False)
+
+breaaak
 
 PATH_21_dir = "data/2021_Approved_Congressional_Plan_with_Final_Adjustments"
 PATH_21 = PATH_21_dir + "/2021_Approved_Congressional_Plan_w_Final_Adjustments.shp"
