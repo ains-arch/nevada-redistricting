@@ -39,9 +39,9 @@ We process and merge voter registration, voter demographic data, and precinct bo
 - Output:  
   - `precinct_p_fixed.shp`: Cleaned precinct boundary shapefile.  
   - Diagnostic plots saved as `original_gdf.png`, `repaired.png`, and `merged.png`.
-<img src=original_gdf.png/>
-<img src=repaired.png/>
-<img src=merged.png/>
+<img src=figs/original_gdf.png/>
+<img src=figs/repaired.png/>
+<img src=figs/merged.png/>
 
 ### Merging Voter Data with Precinct Boundaries:
 - Inputs:  
@@ -64,7 +64,7 @@ We process and merge voter registration, voter demographic data, and precinct bo
 The Clark County Commission has seven members, elected from seven districts, which were redistricted after the 2020 Census during the 2021 redistricting process.
 The districts are made up of precincts, which also changed lines during the redistricting process.
 
-<img src=precincts.png/>
+<img src=figs/precincts.png/>
 
 ## Who draws them?
 The county commission at the time of the 2021 redistricting process was seven Democrats.
@@ -82,26 +82,26 @@ However, generally there was support for increased Latino representation.
 ## Setting
 Below is a set of maps that illustrate the partisan geography of Nevada.
 ### Democratic 2024 voters
-<img src=dem_perc.png/>
-<img src=dem_perc_assembly.png/>
-<img src=dem_perc_senate.png/>
-<img src=dem_perc_congress.png/>
-<img src=dem_perc_commission.png/>
+<img src=figs/dem_perc.png/>
+<img src=figs/dem_perc_assembly.png/>
+<img src=figs/dem_perc_senate.png/>
+<img src=figs/dem_perc_congress.png/>
+<img src=figs/dem_perc_commission.png/>
 
 ### Republican 2024 voters
-<img src=np_perc.png/>
-<img src=np_perc_assembly.png/>
-<img src=np_perc_senate.png/>
-<img src=np_perc_congress.png/>
-<img src=np_perc_commission.png/>
+<img src=figs/np_perc.png/>
+<img src=figs/np_perc_assembly.png/>
+<img src=figs/np_perc_senate.png/>
+<img src=figs/np_perc_congress.png/>
+<img src=figs/np_perc_commission.png/>
 
 Due to the easy of registration through the DMV, in which voters are not asked to choose a party affiliation, Nevada has a very high percentage of non-partisan voters.
 ### Independent 2024 voters
-<img src=rep_perc.png/>
-<img src=rep_perc_assembly.png/>
-<img src=rep_perc_senate.png/>
-<img src=rep_perc_congress.png/>
-<img src=rep_perc_commission.png/>
+<img src=figs/rep_perc.png/>
+<img src=figs/rep_perc_assembly.png/>
+<img src=figs/rep_perc_senate.png/>
+<img src=figs/rep_perc_congress.png/>
+<img src=figs/rep_perc_commission.png/>
 
 # Findings
 This report includes data from an ensemble analysis of possible county commission district maps that could have been drawn after the 2020 census.
@@ -111,43 +111,43 @@ This mixing time is sufficient, as can be shown in the similarity of the followi
 The ensemble analysis focused on partisan lean as shown through the number of people who voted in the 2024 election registered with each major party, and with no party.
 
 ## Cutedges
-<img src=histogram-cutedges-enacted.png/>
-<img src=histogram-cutedges-random.png/>
+<img src=figs/histogram-cutedges-enacted.png/>
+<img src=figs/histogram-cutedges-random.png/>
 
 ## Democratic distribution
 The histogram of Democratic voters shows that the enacted plan's true outcome of xxx Democratic is xxx from the ensemble.
-<img src=histogram-democratic-majority-enacted.png/>
-<img src=histogram-democratic-majority-random.png/>
-<img src=histogram-democratic-plurality-enacted.png/>
-<img src=histogram-democratic-plurality-random.png/>
+<img src=figs/histogram-democratic-majority-enacted.png/>
+<img src=figs/histogram-democratic-majority-random.png/>
+<img src=figs/histogram-democratic-plurality-enacted.png/>
+<img src=figs/histogram-democratic-plurality-random.png/>
 
 ### Boxplots
 This is further supported by the boxplot, where a greater than expected population of Democratic voters in the xxx is countered by a lower than expected Democratic population in the highest percent district.
 This could imply cracking and packing behavior.
 
-<img src=boxplot-democratic-enacted.png/>
-<img src=boxplot-democratic-random.png/>
+<img src=figs/boxplot-democratic-enacted.png/>
+<img src=figs/boxplot-democratic-random.png/>
 
 ## Republican distribution
-<img src=histogram-independent-majority-enacted.png/>
-<img src=histogram-independent-majority-random.png/>
-<img src=histogram-independent-plurality-enacted.png/>
-<img src=histogram-independent-plurality-random.png/>
+<img src=figs/histogram-independent-majority-enacted.png/>
+<img src=figs/histogram-independent-majority-random.png/>
+<img src=figs/histogram-independent-plurality-enacted.png/>
+<img src=figs/histogram-independent-plurality-random.png/>
 
 ### Boxplots
-<img src=boxplot-republican-enacted.png/>
-<img src=boxplot-republican-random.png/>
+<img src=figs/boxplot-republican-enacted.png/>
+<img src=figs/boxplot-republican-random.png/>
 
 
 ## Independent distribution
-<img src=histogram-republican-majority-enacted.png/>
-<img src=histogram-republican-majority-random.png/>
-<img src=histogram-republican-plurality-enacted.png/>
-<img src=histogram-republican-plurality-random.png/>
+<img src=figs/histogram-republican-majority-enacted.png/>
+<img src=figs/histogram-republican-majority-random.png/>
+<img src=figs/histogram-republican-plurality-enacted.png/>
+<img src=figs/histogram-republican-plurality-random.png/>
 
 ### Boxplots
-<img src=boxplot-independent-enacted.png/>
-<img src=boxplot-independent-random.png/>
+<img src=figs/boxplot-independent-enacted.png/>
+<img src=figs/boxplot-independent-random.png/>
 
 ## Discussion
 The ensemble analysis shows that the enacted plan is not precisely the average of the plans, but it is still well within the possible options.
