@@ -349,7 +349,7 @@ def save_histogram(data, enacted_value, level, party, metric, color, flag, outpu
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
                     label=f"Enacted plan's {metric} = {enacted_value}")
     else:
-        plt.title(f"{party} in {level.capitalize()} Level", fontsize=14)
+        plt.title(f"{party} in {level.capitalize()} from {flag.capitalize()} Start", fontsize=14)
         plt.axvline(x=enacted_value, color='orange', linestyle='--', linewidth=2, 
                     label=f"Enacted plan's {party.lower()} = {enacted_value}")
     plt.legend()
@@ -362,7 +362,7 @@ def save_histogram(data, enacted_value, level, party, metric, color, flag, outpu
         plt.close()
         print(f"Saved {output_dir}/histogram-{party.lower()}-{level.lower()}-{flag}.png")
 
-def save_boxplot(data, enacted_values, level, party, color, output_dir="figs"):
+def save_boxplot(data, enacted_values, level, party, color, flag, output_dir="figs"):
     """
     Saves a boxplot for party percentages by district at a given level.
 
@@ -372,6 +372,7 @@ def save_boxplot(data, enacted_values, level, party, color, output_dir="figs"):
         level (str): The district level (e.g., "congress", "assembly").
         party (str): The political party (e.g., "Democratic", "Republican", "Independent").
         color (str): The color for the boxplot (e.g., "blue", "red", "purple").
+        flag (str): "random" or "enacted" based on start of ensemble.
         output_dir (str): Directory to save the plots.
     """
     a = np.array(data)
@@ -394,11 +395,11 @@ def save_boxplot(data, enacted_values, level, party, color, output_dir="figs"):
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel(f"{party} Percentage", fontsize=12)
-    plt.title(f"{party} Percentage Distribution by {level.capitalize()} Districts", fontsize=14)
+    plt.title(f"{party} Percentage Distribution by {level.capitalize()} Districts from {flag.capitalize()} Start", fontsize=14)
     plt.legend()
 
     # Save the boxplot
-    filename = f"{output_dir}/boxplot-{party.lower()}-{level.lower()}.png"
+    filename = f"{output_dir}/boxplot-{party.lower()}-{level.lower()}-{flag}.png"
     plt.savefig(filename)
     plt.close()
     print(f"Saved {filename}")
@@ -465,70 +466,68 @@ def run_random_walk(enacted = True):
     # Run the random walk
     print(f"Running random walk from {flag} start...")
     cutedge_ensemble = []
-    if flag == "random": # Skip calculating partisan ensembles for plan start
-        d_plu_ensemble = []
-        d_maj_ensemble = []
-        dempop = []
-        r_plu_ensemble = []
-        r_maj_ensemble = []
-        reppop = []
-        np_plu_ensemble = []
-        np_maj_ensemble = []
-        nppop = []
+    d_plu_ensemble = []
+    d_maj_ensemble = []
+    dempop = []
+    r_plu_ensemble = []
+    r_maj_ensemble = []
+    reppop = []
+    np_plu_ensemble = []
+    np_maj_ensemble = []
+    nppop = []
     
     for part in our_random_walk:
         # Add cutedges to cutedges ensemble
         cutedge_ensemble.append(len(part["cutedges"]))
     
-        if flag == "random": # Run the full ensemble for the random plan
-            d_plu = 0
-            r_plu = 0
-            np_plu = 0
-            d_maj = 0
-            r_maj = 0
-            np_maj = 0
-            dempop_this_step = []
-            reppop_this_step = []
-            nppop_this_step = []
+        d_plu = 0
+        r_plu = 0
+        np_plu = 0
+        d_maj = 0
+        r_maj = 0
+        np_maj = 0
+        dempop_this_step = []
+        reppop_this_step = []
+        nppop_this_step = []
 
-            for district in part.parts:
-                d_perc = part["dempop"][district]/part["totpop"][district]
-                dempop_this_step.append(d_perc)
-                r_perc = part["reppop"][district]/part["totpop"][district]
-                reppop_this_step.append(r_perc)
-                np_perc = part["nppop"][district]/part["totpop"][district]
-                nppop_this_step.append(np_perc)
+        for district in part.parts:
+            d_perc = part["dempop"][district]/part["totpop"][district]
+            dempop_this_step.append(d_perc)
+            r_perc = part["reppop"][district]/part["totpop"][district]
+            reppop_this_step.append(r_perc)
+            np_perc = part["nppop"][district]/part["totpop"][district]
+            nppop_this_step.append(np_perc)
 
-                # plurality districts
-                if d_perc >= r_perc and d_perc >= np_perc:
-                    d_plu += 1
-                if r_perc >= d_perc and r_perc >= np_perc:
-                    r_plu += 1
-                if np_perc >= d_perc and np_perc >= r_perc:
-                    np_plu += 1
+            # plurality districts
+            if d_perc >= r_perc and d_perc >= np_perc:
+                d_plu += 1
+            if r_perc >= d_perc and r_perc >= np_perc:
+                r_plu += 1
+            if np_perc >= d_perc and np_perc >= r_perc:
+                np_plu += 1
 
-                # majority districts
-                if d_perc >= 0.5:
-                    d_maj += 1
-                if r_perc >= 0.5:
-                    r_maj += 1
-                if np_perc >= 0.5:
-                    np_maj += 1
+            # majority districts
+            if d_perc >= 0.5:
+                d_maj += 1
+            if r_perc >= 0.5:
+                r_maj += 1
+            if np_perc >= 0.5:
+                np_maj += 1
 
-            d_plu_ensemble.append(d_plu)
-            d_maj_ensemble.append(d_maj)
-            dempop_this_step.sort()
-            dempop.append(dempop_this_step)
+        d_plu_ensemble.append(d_plu)
+        d_maj_ensemble.append(d_maj)
+        dempop_this_step.sort()
+        dempop.append(dempop_this_step)
 
-            r_plu_ensemble.append(r_plu)
-            r_maj_ensemble.append(r_maj)
-            reppop_this_step.sort()
-            reppop.append(reppop_this_step)
+        r_plu_ensemble.append(r_plu)
+        r_maj_ensemble.append(r_maj)
+        reppop_this_step.sort()
+        reppop.append(reppop_this_step)
 
-            np_plu_ensemble.append(np_plu)
-            np_maj_ensemble.append(np_maj)
-            nppop_this_step.sort()
-            nppop.append(nppop_this_step)
+        np_plu_ensemble.append(np_plu)
+        np_maj_ensemble.append(np_maj)
+        nppop_this_step.sort()
+        nppop.append(nppop_this_step)
     
     print("Random walk complete.\n")
 
@@ -544,13 +543,12 @@ def run_random_walk(enacted = True):
         "majority": {"Democratic": "dem_majority", "Republican": "rep_majority", "Independent": "np_majority"}
     }
     
-    if flag == "random":  # Only continue with full ensemble if 'random' flag
-        # Party data for boxplots
-        district_ensemble_data = {
-            "Democratic": dempop,
-            "Republican": reppop,
-            "Independent": nppop
-        }
+    # Party data for boxplots
+    district_ensemble_data = {
+        "Democratic": dempop,
+        "Republican": reppop,
+        "Independent": nppop
+    }
     
     # Generate histograms and boxplots
     for level in summary_df['level'].unique():
@@ -559,29 +557,28 @@ def run_random_walk(enacted = True):
                        summary_df.loc[summary_df['level'] == level, "cutedges"].values[0],
                        level, "Cutedges", None, "brown", flag)
     
-        if flag == "random":  # Only continue with full ensemble if 'random' flag
-            # Histograms
-            for metric, party_columns in metrics_mapping.items():
-                for party, column in party_columns.items():
-                    enacted_value = summary_df.loc[summary_df['level'] == level, column].values[0]
-                    # Select the appropriate ensemble data
-                    data = d_plu_ensemble if party == "Democratic" and metric == "plurality" else \
-                           d_maj_ensemble if party == "Democratic" and metric == "majority" else \
-                           r_plu_ensemble if party == "Republican" and metric == "plurality" else \
-                           r_maj_ensemble if party == "Republican" and metric == "majority" else \
-                           np_plu_ensemble if party == "Independent" and metric == "plurality" else \
-                           np_maj_ensemble
+        # Histograms
+        for metric, party_columns in metrics_mapping.items():
+            for party, column in party_columns.items():
+                enacted_value = summary_df.loc[summary_df['level'] == level, column].values[0]
+                # Select the appropriate ensemble data
+                data = d_plu_ensemble if party == "Democratic" and metric == "plurality" else \
+                       d_maj_ensemble if party == "Democratic" and metric == "majority" else \
+                       r_plu_ensemble if party == "Republican" and metric == "plurality" else \
+                       r_maj_ensemble if party == "Republican" and metric == "majority" else \
+                       np_plu_ensemble if party == "Independent" and metric == "plurality" else \
+                       np_maj_ensemble
     
-                    # Save the histogram
-                    save_histogram(data, enacted_value, level, party, metric, party_colors[party], flag)
+                # Save the histogram
+                save_histogram(data, enacted_value, level, party, metric, party_colors[party], flag)
 
-            # Boxplots
-            for party, data in district_ensemble_data.items():
-                # Get enacted values for the current party and level
-                enacted_values = summary_df.loc[summary_df['level'] == level, f"{party_short[party]}_perc"].values[0]
-                
-                # Save the boxplot
-                save_boxplot(data, enacted_values, level, party, party_colors[party])
+        # Boxplots
+        for party, data in district_ensemble_data.items():
+            # Get enacted values for the current party and level
+            enacted_values = summary_df.loc[summary_df['level'] == level, f"{party_short[party]}_perc"].values[0]
+            
+            # Save the boxplot
+            save_boxplot(data, enacted_values, level, party, party_colors[party], flag)
 
 run_random_walk()
 run_random_walk(enacted = False)
