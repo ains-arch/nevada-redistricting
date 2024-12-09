@@ -1,5 +1,4 @@
 # Nevada's Clark County Commission Redistricting Analysis
-[![](https://github.com/ains-arch/nevada-redistricting/actions/workflows/test.yml/badge.svg)](https://github.com/ains-arch/nevada-redistricting/actions/workflows/test.yml)
 
 In this report, we detail an ensemble analysis of Nevada's 2021 Clark County Commission districting map with the 2024 election voterfile and party registration data.
 
@@ -115,16 +114,12 @@ The ensemble analysis focused on partisan lean as shown through the number of pe
 <img src=figs/histogram-cutedges-random.png/>
 
 ## Democratic distribution
-The histogram of Democratic voters shows that the enacted plan's true outcome of xxx Democratic is xxx from the ensemble.
 <img src=figs/histogram-democratic-majority-enacted.png/>
 <img src=figs/histogram-democratic-majority-random.png/>
 <img src=figs/histogram-democratic-plurality-enacted.png/>
 <img src=figs/histogram-democratic-plurality-random.png/>
 
 ### Boxplots
-This is further supported by the boxplot, where a greater than expected population of Democratic voters in the xxx is countered by a lower than expected Democratic population in the highest percent district.
-This could imply cracking and packing behavior.
-
 <img src=figs/boxplot-democratic-enacted.png/>
 <img src=figs/boxplot-democratic-random.png/>
 
@@ -148,10 +143,6 @@ This could imply cracking and packing behavior.
 ### Boxplots
 <img src=figs/boxplot-independent-enacted.png/>
 <img src=figs/boxplot-independent-random.png/>
-
-## Discussion
-The ensemble analysis shows that the enacted plan is not precisely the average of the plans, but it is still well within the possible options.
-While gerrymandering is possible, a more likely explanation for this deviation from the mean is the choice of the redistricting committee to focus on building a second Hispanic-majority district.
 
 ## Future work
 Further analysis of the demographic makeup of the districts, with a focus on Hispanic and other racial demographic outcomes would lend more information about whether the goals of the redistricting process were successful. Additionally, comparing to the previous plan would allow a wider picture of whether redistricing favored one party over the other.
