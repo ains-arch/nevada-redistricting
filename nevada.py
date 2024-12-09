@@ -14,30 +14,29 @@ from gerrychain.updaters import cut_edges, Tally
 from gerrychain.proposals import recom
 from gerrychain.accept import always_accept
 
-# warnings.filterwarnings("ignore") # Suppress warnings about NA values
+warnings.filterwarnings("ignore") # Suppress warnings about NA values
 
 # To reproduce results
-# import random
-# random.seed(188923)
+import random
+random.seed(89134)
 
 # Set up argument parser
-# parser = argparse.ArgumentParser(description="Run random walk with a specified number of steps.")
-# parser.add_argument(
-    # '--total_steps', 
-    # type=int, 
-    # default=100, 
-    # help='The total number of steps for the random walk (default: 100)'
-# )
-total_steps = 100
+parser = argparse.ArgumentParser(description="Run random walk with a specified number of steps.")
+parser.add_argument(
+  '--total_steps', 
+  type=int, 
+  default=100, 
+  help='The total number of steps for the random walk (default: 100)'
+)
 
 # Parse the arguments
-# args = parser.parse_args()
+args = parser.parse_args()
 
-# Use the total_steps argument in your code
-# total_steps = args.total_steps
+# Use the total_steps argument in code
+total_steps = args.total_steps
 
 # Set global matplotlib dpi for high quality plots
-# plt.rcParams['savefig.dpi'] = 300
+plt.rcParams['savefig.dpi'] = 300
 
 # Load the data
 shapefile_path = "data/aggregated_precincts.shp"
@@ -274,7 +273,6 @@ for level in ['congress', 'assembly', 'senate', 'commission']:
     partition, gdf, graph, summary_df = analyze_districts(gdf, level, graph, cut_edges, summary_df)
 
 # Access the summary data for specific levels or statistics
-print(summary_df)
 summary_df.to_csv("data/summary.csv", index=False)
 
 print("Enacted maps data manipulation complete.\n")
@@ -347,13 +345,9 @@ def save_boxplot(data, enacted_values, level, party, color, output_dir="figs"):
         color (str): The color for the boxplot (e.g., "blue", "red", "purple").
         output_dir (str): Directory to save the plots.
     """
-    print(f"DEBUG: data: {data}")
     a = np.array(data)
-    print(f"DEBUG: a: {a}")
     # Sort enacted values for better visualization
-    print(f"DEBUG: enacted_values: {enacted_values}")
     enacted_values_sorted = sorted(enacted_values)
-    print(f"DEBUG: enacted_values_sorted: {enacted_values_sorted}")
 
     # Create the boxplot
     plt.figure()
@@ -555,87 +549,10 @@ def run_random_walk(enacted = True):
             # Boxplots
             for party, data in district_ensemble_data.items():
                 # Get enacted values for the current party and level
-                print(summary_df)
                 enacted_values = summary_df.loc[summary_df['level'] == level, f"{party_short[party]}_perc"].values[0]
-                print(f"DEBUG: enacted_values: {enacted_values}")
                 
                 # Save the boxplot
                 save_boxplot(data, enacted_values, level, party, party_colors[party])
 
-    # Use summary_df to dynamically retrieve the enacted values
-    # for level in summary_df['level'].unique():
-        # for metric, party_columns in metrics_mapping.items():
-            # for party, column in party_columns.items():
-                # # Get the enacted values for the current combination
-                # enacted_values = summary_df.loc[summary_df['level'] == level, column].values[0]
-                # enacted_values_list = enacted_values if isinstance(enacted_values, list) else [enacted_values]
-    
-                # Select the corresponding ensemble data
-                # data = district_ensemble_data[party]
-    
-                # Save the boxplot
-                # save_boxplot(data, enacted_values_list, level, party, metric, party_colors[party])
-
-    # # Make bopxlot
-    # a = np.array(hpop)
-    # district_stats_sorted = district_stats.sort_values('hisp_perc_cd')
-    # sorted_hpop = district_stats_sorted['hisp_perc_cd'].values
-    # plt.figure()
-    # plt.boxplot(a)
-    # plt.scatter(x = range(1, NUM_DIST + 1), y=sorted_hpop, color="red")
-    # plt.savefig("figs/boxplot-hispanic.png")
-
-    # plt.figure()
-    # plt.boxplot(a, patch_artist=True, 
-    #         boxprops=dict(facecolor='orange', color='black'),
-    #         medianprops=dict(color='blue', linewidth=2),
-    #         whiskerprops=dict(color='black', linewidth=1),
-    #         capprops=dict(color='black', linewidth=1),
-    #         zorder=1)
-    # plt.scatter(x=range(1, NUM_DIST + 1), y=sorted_hpop, color="red", label="Enacted plan",
-    #             zorder=2)
-    # plt.axhline(y=0.3, color='blue', linestyle='--', linewidth=2, label="30% threshold")
-    # plt.xticks(range(1, NUM_DIST + 1), fontsize=12)
-    # plt.yticks(fontsize=12)
-    # plt.xlabel("Districts", fontsize=12)
-    # plt.ylabel("Hispanic Percentage", fontsize=12)
-    # plt.title("Hispanic Population Distribution by District", fontsize=14)
-    # plt.legend()
-    # plt.savefig("figs/boxplot-hispanic-styled.png")
-
 run_random_walk()
 run_random_walk(enacted = False)
-
-breaaak
-
-PATH_21_dir = "data/2021_Approved_Congressional_Plan_with_Final_Adjustments"
-PATH_21 = PATH_21_dir + "/2021_Approved_Congressional_Plan_w_Final_Adjustments.shp"
-print(f"\n2021 shapefile path: {PATH_21}\n")
-
-# Dual graph from shapefile
-print("Loading 2021 graph...")
-graph_21 = Graph.from_file(PATH_21)
-print("2021 graph loaded.\n")
-
-print(f"Is the 2021 dual graph connected? {nx.is_connected(graph_21)}")
-print(f"Is the 2021 dual graph planar? {nx.is_planar(graph_21)}")
-print(f"Number of Nodes: {len(graph_21.nodes())}")
-print(f"Number of Edges: {len(graph_21.edges())}")
-
-print(f"Graph columns: {graph_21.nodes()[0].keys()}\n")
-# dict_keys(['boundary_node', 'area', 'OBJECTID', 'District', 'Shape_Leng', 'Shape_Le_1',
-# 'Shape_Area', 'geometry'])
-
-# Geodataframe from shapefile
-print("Loading 2021 Geodataframe...")
-gdf_21 = gpd.read_file(PATH_21)
-print("2021 geodataframe loaded.\n")
-print(f"2021 shapefile columns: {gdf_21.columns}\n")
-
-# Plot the new plan
-plt.figure()
-gdf_21.plot(cmap='tab10')
-plt.title('Congressional Districts Today', fontsize=14)
-plt.axis('off')
-plt.savefig("figs/2021-congressional-districts.png")
-print("Saved figs/2021-congressional-districts.png")
