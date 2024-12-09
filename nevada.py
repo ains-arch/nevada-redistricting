@@ -50,15 +50,44 @@ print(f"Is the dual graph connected? {nx.is_connected(graph)}")
 print("gdf:\n", gdf.columns)
 
 # Define a helper function for plotting
-def plot_map(gdf, column, cmap, title, output_path):
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import geopandas as gpd
+
+def plot_map(gdf, column, cmap, title, output_path, level_column=None):
+    """
+    Plots a choropleth map of a given column in a GeoDataFrame with district-level outlines.
+
+    Parameters:
+        gdf (GeoDataFrame): The GeoDataFrame containing precinct geometries and data.
+        column (str): The column to visualize.
+        cmap (str): The colormap for the data.
+        title (str): The title of the plot.
+        output_path (str): The path to save the output image.
+        level_column (str, optional): The column to group by for district outlines (e.g., "senate").
+    """
     plt.figure(figsize=(10, 8))
+
+    # Plot the precinct-level data
     ax = gdf.plot(
         column=column,
         cmap=cmap,
         missing_kwds={"color": "gray"},
         vmin=0, vmax=1,
-        legend=False
+        legend=False,
+        alpha=0.8  # Slight transparency for better outline visibility
     )
+    
+    # Overlay district boundaries if level_column is specified
+    if level_column:
+        districts_gdf = gdf.dissolve(by=level_column)  # Aggregate geometries by level
+        districts_gdf.boundary.plot(ax=ax, color="black", linewidth=0.2)
+    else:
+        gdf.boundary.plot(ax=ax, color="black", linewidth=0.2)
+
     plt.axis('off')
     plt.title(title, fontsize=14)
     
@@ -203,7 +232,7 @@ def analyze_districts(gdf, level, graph, cut_edges, summary_df=None):
     parties = [
         ("Democratic", "DEM", f'dem_perc_{level}'),
         ("Republican", "REP", f'rep_perc_{level}'),
-        ("Nevada Independent", "NP", f'np_perc_{level}'),
+        ("Independent", "NP", f'np_perc_{level}'),
     ]
     
     plurality_counts = {}
@@ -236,25 +265,25 @@ def analyze_districts(gdf, level, graph, cut_edges, summary_df=None):
         "np_perc": district_stats[f"np_perc_{level}"],
         "dem_plurality": plurality_counts["Democratic"],
         "rep_plurality": plurality_counts["Republican"],
-        "np_plurality": plurality_counts["Nevada Independent"],
+        "np_plurality": plurality_counts["Independent"],
         "dem_majority": majority_counts["Democratic"],
         "rep_majority": majority_counts["Republican"],
-        "np_majority": majority_counts["Nevada Independent"],
+        "np_majority": majority_counts["Independent"],
         }])
     summary_df = pd.concat([summary_df, summary_entry], ignore_index=True)
 
     # Plot maps
     plot_map(gdf, parties[0][2], 'Blues',
-             f'Democratic Voters Percentage by {level}',
-             f'figs/dem_perc_{level}.png')
+             f'Democratic Voters Percentage by {level.capitalize()} District',
+             f'figs/dem_perc_{level}.png', level)
 
     plot_map(gdf, parties[1][2], 'Reds',
-             f'Republican Voters Percentage by {level}',
-             f'figs/rep_perc_{level}.png')
+             f'Republican Voters Percentage by {level.capitalize()} District',
+             f'figs/rep_perc_{level}.png', level)
 
     plot_map(gdf, parties[2][2], 'viridis',
-             f'Nevada Independent Voters Percentage by {level}',
-             f'figs/np_perc_{level}.png')
+             f'Independent Voters Percentage by {level.capitalize()} District',
+             f'figs/np_perc_{level}.png', level)
 
     # Reloading graph
     print("Loading updated graph...")
