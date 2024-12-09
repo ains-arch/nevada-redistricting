@@ -381,14 +381,14 @@ def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
     plt.figure()
     plt.boxplot(a, patch_artist=True, 
                 boxprops=dict(facecolor=color, color='black'),
-                medianprops=dict(color='blue', linewidth=2),
+                medianprops=dict(color='goldenrod', linewidth=2),
                 whiskerprops=dict(color='black', linewidth=1),
                 capprops=dict(color='black', linewidth=1),
                 zorder=1)
 
     # Overlay the enacted plan as a scatter plot
     plt.scatter(x=range(1, len(enacted_values_sorted) + 1), y=enacted_values_sorted, 
-                color="yellow", label="Enacted plan", zorder=2)
+                color="goldenrod", label="Enacted plan", zorder=2)
 
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)
