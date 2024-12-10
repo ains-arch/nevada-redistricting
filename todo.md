@@ -1,6 +1,8 @@
 # code
 ## analysis tweaks
 - reorder plots on `README.md`
+- update `.gitignore`
+- upload data as `.zip`
 - change boxplot y-axis to \[0,1\]
 - make cutedges/percentage vs time plots to emphasize mixing
 - run it for longer - even if I can demonstrate mixing, is 10k steps enough?
