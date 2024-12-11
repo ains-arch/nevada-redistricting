@@ -13,6 +13,12 @@ from gerrychain.tree import recursive_tree_part
 from gerrychain.updaters import cut_edges, Tally
 from gerrychain.proposals import recom
 from gerrychain.accept import always_accept
+from pyei.two_by_two import TwoByTwoEI
+from pyei.goodmans_er import GoodmansER
+from pyei.goodmans_er import GoodmansERBayes
+from pyei.r_by_c import RowByColumnEI
+from pyei.io_utils import to_netcdf
+from pyei.io_utils import from_netcdf
 
 warnings.filterwarnings("ignore") # Suppress warnings about NA values
 
@@ -112,10 +118,12 @@ print("analyzing party")
 gdf['total_voters'] = gdf[['DEM', 'FOR','GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP',
                            'OTH', 'REF','REP', 'TPN', 'WSP']].sum(axis=1)
 
+# Voter registration
 # Calculate percentage columns for each party
 gdf['dem_perc'] = gdf['DEM'] / gdf['total_voters']
 gdf['rep_perc'] = gdf['REP'] / gdf['total_voters']
 gdf['np_perc'] = gdf['NP'] / gdf['total_voters']
+# TODO: add "ind_perc" column which is all the non-DEM/REP voters in the precinct
 gdf = gdf.fillna(0)
 
 # Plot maps for each party
@@ -129,15 +137,17 @@ plot_map(gdf, 'np_perc', 'viridis',
          'Non-Partisan Percentage by Precinct',
          'figs/np_perc.png')
 
-# Reloading graph
+# Sanity checks
+# Reload graph
 print("Loading updated graph...")
 graph = Graph.from_geodataframe(gdf)
 print("graph reloaded")
 print("Updated graph loaded.")
 print(f"Information at nodes: {graph.nodes()[0].keys()}")
 print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
+# TODO: Check percentages of dem/rep/ind voters sum to 1 in each precinct
 
-# Print populations
+# Print populations and percentages
 dempop = sum(graph.nodes()[v]['DEM'] for v in graph.nodes())
 print(f"Democratic voters: {dempop}")
 reppop = sum(graph.nodes()[v]['REP'] for v in graph.nodes())
@@ -149,6 +159,15 @@ print(f"Total voters: {totpop}")
 print(f"Democratic percentage: {dempop/totpop:.2%}")
 print(f"Republican percentage: {reppop/totpop:.2%}")
 print(f"Nevada independents percentage: {nppop/totpop:.2%}")
+
+# TODO: Votes for President in 2024
+# Calculate percentage columns for Harris, Trump, and Other
+    # they should be called harris_perc trump_perc other_perc
+# Plot maps for each candidate
+# Sanity checks:
+    # Reload graph
+    # Check percentages of Harris/Trump/Other sum to 1 in each precinct
+# Print vote tallies and percentages
 
 print("analyzing districts")
 
@@ -307,6 +326,149 @@ summary_df.to_csv("data/summary.csv", index=False)
 print("Enacted maps data manipulation complete.\n")
 print("gdf:\n", gdf.columns)
 
+### TODO: ECOLOGICAL INFERENCE ###
+
+## TODO: PyEI: RxC ##
+
+# Format the data
+# group_fractions_rbyc = np.array(gdf[['dem_perc', 'rep_perc', 'ind_perc']]).T
+# votes_fractions_rbyc = np.array(gdf[['harris_perc', 'trump_perc', 'other_perc']]).T
+# precinct_pops = np.array(gdf['total_voters']).astype(int)
+# candidate_names_rbyc = ["Harris", "Trump", "Other"]
+# demographic_group_names_rbyc = ["Democrat", "Republican", "Independent"]
+
+# Fitting a first model
+# ei_rbyc = RowByColumnEI(model_name='multinomial-dirichlet')
+
+# Fit the model
+# ei_rbyc.fit(group_fractions_rbyc,
+       # votes_fractions_rbyc,
+       # precinct_pops,
+       # demographic_group_names=demographic_group_names_rbyc,
+       # candidate_names=candidate_names_rbyc,
+       # draws=1200,
+       # tune=3000,
+       # chains=4
+# )
+
+# Generate a simple report to summarize the results
+# print(ei_rbyc.summary())
+
+# Visualize statistical model
+# model = ei_rbyc.sim_model
+# plt.figure()
+# pm.model_to_graphviz(model)
+# plt.savefig("ei_rxc_model.png")
+
+# plt.figure()
+# ei_rbyc.plot_kdes(plot_by="candidate")
+# plt.savefig("ei_rxc_candidate.png")
+
+# plt.figure()
+# ei_rbyc.plot_kdes(plot_by="group")
+# plt.savefig("ei_rxc_group.png")
+
+# Visualize CIs for preference
+# plt.figure()
+# ei_rbyc.plot()
+# plt.savefig("ei_rxc_ci.png")
+
+# Visualize on precinct-by-precinct basis
+# plt.figure()
+# ei_rbyc.precinct_level_plot()
+# plt.savefig("ei_rxc_precincts.png")
+
+# Report with numerical values
+# print("EI RxC Information")
+# print(ei_rbyc.summary())
+# print(ei_rbyc.polarization_report(percentile=95, reference_group=0, verbose=True))
+# print(ei_rbyc.polarization_report(threshold=0.10, reference_group=0, verbose=True))
+
+# Save EI ouptut
+# to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
+
+## PyEI: 2x2 ##
+
+# Format the data
+# group_fraction_2by2 = np.array(gdf["ind_perc"])
+# votes_fraction_2by2 = np.array(gdf["harris_perc"])
+# precinct_pops = np.array(gdf["total_voters"]).astype(int)
+# candidate_name_2by2 = "Harris"
+# demographic_group_name_2by2 = "Independent"
+
+# Run analysis
+# Fitting a first model
+# ei_2by2 = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=15, pareto_shape=2)
+
+# Fit the model
+# ei_2by2.fit(group_fraction_2by2,
+      # votes_fraction_2by2,
+      # precinct_pops,
+      # demographic_group_name=demographic_group_name_2by2,
+      # candidate_name=candidate_name_2by2,
+      # draws=1200,
+      # tune=3000,
+      # chains=4
+# )
+
+# Generate a simple report to summarize the results
+# print(ei_2by2.summary())
+
+# Visualize statistical model
+# model = ei_2by2.sim_model
+# plt.figure()
+# pm.model_to_graphviz(model)
+# plt.savefig("ei_2x2_model.png")
+
+# Visualize CIs for preference
+# plt.figure()
+# ei_2by2.plot()
+# plt.savefig("ei_2x2_ci.png")
+
+# Visualize on precinct-by-precinct basis
+# plt.figure()
+# ei_2by2.precinct_level_plot()
+# plt.savefig("ei_2x2_precincts.png")
+
+# Report with numerical values
+# print("EI 2x2 Information")
+# print(ei_2by2.summary())
+# print(ei_2by2.polarization_report(percentile=95, reference_group=0, verbose=True))
+# print(ei_2by2.polarization_report(threshold=0.10, reference_group=0, verbose=True))
+
+# print("Goodman's ER - precincts not weighted by population")
+# goodmans_er = GoodmansER()
+
+# goodmans_er.fit(
+    # group_fraction_2by2,
+    # votes_fraction_2by2,
+    # demographic_group_name=demographic_group_name_2by2,
+    # candidate_name=candidate_name_2by2
+# )
+
+# print(goodmans_er.summary())
+
+# plt.figure()
+# goodmans_er.plot()
+# plt.figure("ei_goodmans_unweighted.png")
+
+# print("Goodman's ER - precincts weighted by population")
+# goodmans_er = GoodmansER(is_weighted_regression="True")
+
+# goodmans_er.fit(group_fraction_2by2,
+    # votes_fraction_2by2,
+    # precinct_pops,
+    # demographic_group_name=demographic_group_name_2by2,
+    # candidate_name=candidate_name_2by2
+# )
+
+# print(goodmans_er.summary())
+
+# plt.figure()
+# goodmans_er.plot()
+# plt.figure("ei_goodmans_weighted.png")
+
+### ENSEMBLE ANALYSIS ###
 
 # Make an initial districting plan using recursive_tree_part
 print("Setting up ensemble..")
