@@ -237,5 +237,3 @@ I additionally referred to [this article](https://nevadacurrent.com/2021/11/03/c
 I built off of a codebase I developed for a previous redistricting project hosted [here](https://github.com/ains-arch/colorado-redistricting).
 
 Information about the legal challenges to the 2021 redistricting process at the state level from [The Nevada Independent](https://thenevadaindependent.com/article/gop-assemblyman-files-lawsuit-challenging-democrats-redistricting-plan) and [The American Redistricting Project](https://thearp.org/litigation/koenig-v-nevada/).
-
-Exit polling from [CNN](https://www.cnn.com/election/2024/exit-polls/nevada/general/president/0).
