@@ -1,0 +1,225 @@
+nohup: ignoring input
+loading shapefile
+shapefile loaded
+gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'DEM',
+       'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP', 'OTH',
+       'REF', 'REP', 'TPN', 'WSP', 'harris', 'trump', 'other', 'total_vote',
+       'geometry'],
+      dtype='object')
+plotting shapefile
+Saved figs/precincts.png
+Saved figs/dem_perc.png
+Saved figs/rep_perc.png
+Saved figs/np_perc.png
+Saved figs/ind_perc.png
+Democratic voters: 367398.0
+Republican voters: 324288.0
+Nevada independents: 272740.0
+Total voters: 1032755.0
+Democratic percentage: 35.57%
+Republican percentage: 31.40%
+Nevada independents percentage: 26.41%
+Saved figs/harris_perc.png
+Saved figs/trump_perc.png
+Saved figs/other_perc.png
+Turning 2024 congress map into a partition...
+Running aggregation into congress districts...
+   congress  total_voters       DEM       REP        NP
+0         1      335719.0  119380.0  106659.0   87265.0
+1         3      385669.0  129721.0  123912.0  105924.0
+2         4      311367.0  118297.0   93717.0   79551.0
+  Number of Democratic plurality districts: 3
+  Number of Democratic majority districts: 0
+  Number of Republican plurality districts: 0
+  Number of Republican majority districts: 0
+  Number of Independent plurality districts: 0
+  Number of Independent majority districts: 0
+  Number of cutedges: 175
+Saved figs/dem_perc_congress.png
+Saved figs/rep_perc_congress.png
+Saved figs/np_perc_congress.png
+Turning 2024 assembly map into a partition...
+Running aggregation into assembly districts...
+    assembly  total_voters      DEM      REP       NP
+0          1       39363.0  15208.0  11937.0   9742.0
+1          2       42116.0  13059.0  15021.0  11139.0
+2          3       28520.0  11213.0   8478.0   7017.0
+3          4       41328.0  13147.0  15340.0   9981.0
+4          5       34402.0  12003.0  10771.0   9327.0
+5          6       18936.0  10844.0   2332.0   4747.0
+6          7       29181.0  13567.0   6579.0   7296.0
+7          8       37184.0  13111.0  10524.0  11166.0
+8          9       36930.0  12283.0  11375.0  10739.0
+9         10       25834.0  10754.0   6957.0   6471.0
+10        11       15649.0   7609.0   2503.0   4571.0
+11        12       33028.0  12095.0  10505.0   8440.0
+12        13       44141.0  13486.0  16493.0  11189.0
+13        14       21056.0   9686.0   4492.0   5605.0
+14        15       20253.0   8385.0   4591.0   5895.0
+15        16       27782.0  10249.0   8128.0   7521.0
+16        17       31916.0  14228.0   6992.0   8677.0
+17        18       28264.0  11631.0   7081.0   7689.0
+18        19       46508.0  10190.0  21817.0  11461.0
+19        20       25852.0  10847.0   6640.0   6675.0
+20        21       38276.0  13135.0  12417.0  10042.0
+21        22       47074.0  13795.0  17953.0  12035.0
+22        23       53219.0  14097.0  22433.0  13045.0
+23        28       17134.0   8096.0   3294.0   4726.0
+24        29       35941.0  12661.0  11298.0   9547.0
+25        34       32665.0  12454.0   9520.0   8579.0
+26        35       41102.0  12958.0  13229.0  11901.0
+27        36       27209.0   7450.0  10189.0   7688.0
+28        37       42644.0  14514.0  14747.0  10567.0
+29        41       37988.0  12840.0  11823.0  10620.0
+30        42       31260.0  11803.0   8829.0   8642.0
+  Number of Democratic plurality districts: 22
+  Number of Democratic majority districts: 1
+  Number of Republican plurality districts: 9
+  Number of Republican majority districts: 0
+  Number of Independent plurality districts: 0
+  Number of Independent majority districts: 0
+  Number of cutedges: 631
+Saved figs/dem_perc_assembly.png
+Saved figs/rep_perc_assembly.png
+Saved figs/np_perc_assembly.png
+Turning 2024 senate map into a partition...
+Running aggregation into senate districts...
+    senate  total_voters      DEM      REP       NP
+0        1       71279.0  29436.0  18929.0  18419.0
+1        2       32783.0  15705.0   5797.0   9297.0
+2        3       54354.0  21967.0  15435.0  13488.0
+3        4       48117.0  24411.0   8911.0  12043.0
+4        5       83015.0  26456.0  29251.0  21582.0
+5        6       75309.0  26968.0  24267.0  19146.0
+6        7       54116.0  22478.0  13721.0  14364.0
+7        8       76518.0  25062.0  25792.0  20466.0
+8        9       68190.0  24086.0  20204.0  19381.0
+9       10       48035.0  18634.0  12719.0  13416.0
+10      11       78286.0  26069.0  23753.0  23067.0
+11      12       76264.0  25975.0  24240.0  20662.0
+12      18       85469.0  26633.0  31833.0  21170.0
+13      19       27209.0   7450.0  10189.0   7688.0
+14      20       99727.0  24287.0  44250.0  24506.0
+15      21       54084.0  21781.0  14997.0  14045.0
+  Number of Democratic plurality districts: 11
+  Number of Democratic majority districts: 1
+  Number of Republican plurality districts: 5
+  Number of Republican majority districts: 0
+  Number of Independent plurality districts: 0
+  Number of Independent majority districts: 0
+  Number of cutedges: 461
+Saved figs/dem_perc_senate.png
+Saved figs/rep_perc_senate.png
+Saved figs/np_perc_senate.png
+Turning 2024 commission map into a partition...
+Running aggregation into commission districts...
+  commission  total_voters      DEM      REP       NP
+0          A      154975.0  52049.0  50100.0  42277.0
+1          B      159697.0  54953.0  54203.0  40310.0
+2          C      176114.0  58106.0  60285.0  45806.0
+3          D      101508.0  48930.0  19953.0  26576.0
+4          E      106585.0  43676.0  28525.0  27793.0
+5          F      170606.0  55634.0  55319.0  47959.0
+6          G      163270.0  54050.0  55903.0  42019.0
+  Number of Democratic plurality districts: 5
+  Number of Democratic majority districts: 0
+  Number of Republican plurality districts: 2
+  Number of Republican majority districts: 0
+  Number of Independent plurality districts: 0
+  Number of Independent majority districts: 0
+  Number of cutedges: 357
+Saved figs/dem_perc_commission.png
+Saved figs/rep_perc_commission.png
+Saved figs/np_perc_commission.png
+Enacted maps data manipulation complete.
+
+gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'DEM',
+       'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP', 'OTH',
+       'REF', 'REP', 'TPN', 'WSP', 'harris', 'trump', 'other', 'total_vote',
+       'geometry', 'total_voters', 'dem_perc', 'rep_perc', 'np_perc',
+       'ind_perc', 'harris_perc', 'trump_perc', 'other_perc',
+       'dem_perc_congress', 'rep_perc_congress', 'np_perc_congress',
+       'dem_perc_assembly', 'rep_perc_assembly', 'np_perc_assembly',
+       'dem_perc_senate', 'rep_perc_senate', 'np_perc_senate',
+       'dem_perc_commission', 'rep_perc_commission', 'np_perc_commission'],
+      dtype='object')
+Running ['Democrat', 'Republican', 'Independent'] x ['Harris', 'Trump', 'Other'] EI
+r = 3 rows (demographic groups)
+c = 3 columns (candidates or voting outcomes)
+number of precincts = 748
+Running chain 2: 100%|██████████| 4200/4200 [47:07<00:00,  1.49it/s]
+There were 196 divergences after tuning. Increase `target_accept` or reparameterize.
+The rhat statistic is larger than 1.01 for some parameters. This indicates problems during sampling. See https://arxiv.org/abs/1903.08008 for details
+The effective sample size per chain is smaller than 100 for some parameters.  A higher number is needed for reliable rhat and ess computation. See https://arxiv.org/abs/1903.08008 for details
+
+            Computed from the raw b_ samples by multiplying by group populations and then
+            getting the proportion of the total pop
+            (total pop=summed across all districts):
+            The posterior mean for the district-level voting preference of
+                Democrat for Harris is
+                0.993
+                95% equal-tailed credible interval:  [0.98742983 0.99725961]
+                The posterior mean for the district-level voting preference of
+                Democrat for Trump is
+                0.006
+                95% equal-tailed credible interval:  [0.00221203 0.01223249]
+                The posterior mean for the district-level voting preference of
+                Democrat for Other is
+                0.000
+                95% equal-tailed credible interval:  [0.0001797 0.0008141]
+                The posterior mean for the district-level voting preference of
+                Republican for Harris is
+                0.002
+                95% equal-tailed credible interval:  [0.00060387 0.00429786]
+                The posterior mean for the district-level voting preference of
+                Republican for Trump is
+                0.997
+                95% equal-tailed credible interval:  [0.99532574 0.99895474]
+                The posterior mean for the district-level voting preference of
+                Republican for Other is
+                0.000
+                95% equal-tailed credible interval:  [0.00014932 0.00107742]
+                The posterior mean for the district-level voting preference of
+                Independent for Harris is
+                0.456
+                95% equal-tailed credible interval:  [0.45108017 0.46319082]
+                The posterior mean for the district-level voting preference of
+                Independent for Trump is
+                0.491
+                95% equal-tailed credible interval:  [0.48445524 0.49664881]
+                The posterior mean for the district-level voting preference of
+                Independent for Other is
+                0.052
+                95% equal-tailed credible interval:  [0.05140673 0.05328333]
+                
+Setting up ensemble..
+Running random walk from enacted start...
+Random walk complete.
+
+Saved figs/histogram-cutedges-enacted.png
+Saved figs/histogram-democratic-plurality-enacted.png
+Saved figs/histogram-republican-plurality-enacted.png
+Saved figs/histogram-independent-plurality-enacted.png
+Saved figs/histogram-democratic-majority-enacted.png
+Saved figs/histogram-republican-majority-enacted.png
+Saved figs/histogram-independent-majority-enacted.png
+Saved figs/boxplot-democratic-enacted.png
+Saved figs/boxplot-republican-enacted.png
+Saved figs/boxplot-independent-enacted.png
+Running random walk from random start...
+Random walk complete.
+
+Saved figs/histogram-cutedges-random.png
+Saved figs/histogram-democratic-plurality-random.png
+Saved figs/histogram-republican-plurality-random.png
+Saved figs/histogram-independent-plurality-random.png
+Saved figs/histogram-democratic-majority-random.png
+Saved figs/histogram-republican-majority-random.png
+Saved figs/histogram-independent-majority-random.png
+Saved figs/boxplot-democratic-random.png
+Saved figs/boxplot-republican-random.png
+Saved figs/boxplot-independent-random.png
+14149.20user 32.48system 1:37:43elapsed 241%CPU (0avgtext+0avgdata 1687296maxresident)k
+0inputs+473360outputs (0major+570444minor)pagefaults 0swaps

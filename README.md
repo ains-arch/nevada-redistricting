@@ -150,6 +150,8 @@ Here, we show the distribution of both non-partisan voters and voters registered
 <img src=figs/ind_perc_commission.png/>
 
 # Findings
+This work is found in `main.py`, and the output can be found in `main.log`.
+
 This report includes data from an ensemble analysis of possible county commission district maps that could have been drawn after the 2020 census.
 It was run for 100,000 steps.
 This mixing time is sufficient, as can be shown in the similarity of the following boxplots and histograms, which begin their random walks either from the true enacted plan, or from a randomly generated plan.
