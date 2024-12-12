@@ -417,14 +417,11 @@ ei = from_netcdf('data/ei.netcdf')
 print(ei.summary())
 
 plt.figure()
-ei.plot_kdes(plot_by="candidate")
-plt.savefig("figs/ei_candidate.png")
+ei.plot()
+plt.tight_layout()
+plt.subplots_adjust(right=0.80)
+plt.savefig("figs/ei.png")
 
-plt.figure()
-ei.plot_kdes(plot_by="group")
-plt.savefig("figs/ei_group.png")
-
-print("DONE WITH EI")
 breaaak
 
 ### ENSEMBLE ANALYSIS ###
