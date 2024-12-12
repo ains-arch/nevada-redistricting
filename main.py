@@ -8,6 +8,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
+import pymc as pm
 from gerrychain import Graph, Partition, GeographicPartition, MarkovChain, constraints
 from gerrychain.tree import recursive_tree_part
 from gerrychain.updaters import cut_edges, Tally
@@ -45,24 +46,16 @@ total_steps = args.total_steps
 plt.rcParams['savefig.dpi'] = 300
 
 # Load the data
-shapefile_path = "data/aggregated_precincts.shp"
+shapefile_path = "data/final_precincts.shp"
 print("loading shapefile")
 gdf = gpd.read_file(shapefile_path)
 print("shapefile loaded")
-print("loading graph")
 graph = Graph.from_geodataframe(gdf)
-print("graph loaded")
-print(f"Is the dual graph connected? {nx.is_connected(graph)}")
+if not nx.is_connected(graph):
+    raise ValueError("Graph is not connected")
 print("gdf:\n", gdf.columns)
 
 # Define a helper function for plotting
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import geopandas as gpd
-
 def plot_map(gdf, column, cmap, title, output_path, level_column=None):
     """
     Plots a choropleth map of a given column in a GeoDataFrame with district-level outlines.
@@ -112,18 +105,18 @@ def plot_map(gdf, column, cmap, title, output_path, level_column=None):
 print("plotting shapefile")
 plot_map(gdf, None, None, "Clark County Precincts", "figs/precincts.png")
 
-print("analyzing party")
+### ANALYZING PARTY ###
 
 # Calculate total voters per precinct
 gdf['total_voters'] = gdf[['DEM', 'FOR','GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP',
                            'OTH', 'REF','REP', 'TPN', 'WSP']].sum(axis=1)
 
-# Voter registration
+## Voter registration ##
 # Calculate percentage columns for each party
 gdf['dem_perc'] = gdf['DEM'] / gdf['total_voters']
 gdf['rep_perc'] = gdf['REP'] / gdf['total_voters']
 gdf['np_perc'] = gdf['NP'] / gdf['total_voters']
-# TODO: add "ind_perc" column which is all the non-DEM/REP voters in the precinct
+gdf['ind_perc'] = (gdf['total_voters'] - gdf['DEM'] - gdf['REP']) / gdf['total_voters']
 gdf = gdf.fillna(0)
 
 # Plot maps for each party
@@ -136,16 +129,39 @@ plot_map(gdf, 'rep_perc', 'Reds',
 plot_map(gdf, 'np_perc', 'viridis', 
          'Non-Partisan Percentage by Precinct',
          'figs/np_perc.png')
+plot_map(gdf, 'ind_perc', 'YlOrBr', 
+         'Independents Percentage by Precinct',
+         'figs/ind_perc.png')
 
-# Sanity checks
+# Sanity checks #
 # Reload graph
-print("Loading updated graph...")
 graph = Graph.from_geodataframe(gdf)
-print("graph reloaded")
-print("Updated graph loaded.")
-print(f"Information at nodes: {graph.nodes()[0].keys()}")
-print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
-# TODO: Check percentages of dem/rep/ind voters sum to 1 in each precinct
+if not nx.is_connected(graph):
+    raise ValueError("Graph is no longer connected")
+
+# Verify percentages sum to 1 for precincts with voters
+# Create a mask for precincts with non-zero total voters
+non_zero_voters_mask = gdf['total_voters'] > 0
+
+# Check percentages for precincts with voters
+percentage_check = np.isclose(
+    gdf.loc[non_zero_voters_mask, 'dem_perc'] + 
+    gdf.loc[non_zero_voters_mask, 'rep_perc'] + 
+    gdf.loc[non_zero_voters_mask, 'ind_perc'], 
+    1.0, 
+    atol=1e-10  # absolute tolerance to account for floating-point imprecision
+)
+
+# If any rows fail the check, print them out
+problematic_rows = gdf.loc[non_zero_voters_mask][~percentage_check]
+if not problematic_rows.empty:
+    print("Rows where percentages do not sum to 1:")
+    print(problematic_rows[['precinct', 'dem_perc', 'rep_perc', 'ind_perc', 'total_voters']])
+    print(f"Number of problematic rows: {len(problematic_rows)}")
+    
+# Raise an error if there are any problematic rows
+if not problematic_rows.empty:
+    raise ValueError("Voter percentages do not sum to 1 in all precincts")
 
 # Print populations and percentages
 dempop = sum(graph.nodes()[v]['DEM'] for v in graph.nodes())
@@ -160,17 +176,57 @@ print(f"Democratic percentage: {dempop/totpop:.2%}")
 print(f"Republican percentage: {reppop/totpop:.2%}")
 print(f"Nevada independents percentage: {nppop/totpop:.2%}")
 
-# TODO: Votes for President in 2024
-# Calculate percentage columns for Harris, Trump, and Other
-    # they should be called harris_perc trump_perc other_perc
-# Plot maps for each candidate
-# Sanity checks:
-    # Reload graph
-    # Check percentages of Harris/Trump/Other sum to 1 in each precinct
+## Votes for President in 2024 ##
+# Calculate vote percentage columns for presidential candidates
+gdf['harris_perc'] = gdf['harris'] / gdf['total_vote']
+gdf['trump_perc'] = gdf['trump'] / gdf['total_vote']
+gdf['other_perc'] = gdf['other'] / gdf['total_vote']
+gdf = gdf.fillna(0)
+
 # Print vote tallies and percentages
 
-print("analyzing districts")
+# Plot maps for each party
+plot_map(gdf, 'harris_perc', 'Blues',
+         'Harris Percentage by Precinct',
+         'figs/harris_perc.png')
+plot_map(gdf, 'trump_perc', 'Reds',
+         'Trump Percentage by Precinct',
+         'figs/trump_perc.png')
+plot_map(gdf, 'other_perc', 'YlOrBr', 
+         'Other by Precinct',
+         'figs/other_perc.png')
 
+# Sanity checks #
+# Reload graph
+graph = Graph.from_geodataframe(gdf)
+if not nx.is_connected(graph):
+    raise ValueError("Graph is no longer connected")
+
+# Verify percentages sum to 1 for precincts with votes
+# Create a mask for precincts with non-zero total votes
+non_zero_votes_mask = gdf['total_vote'] > 0
+
+# Check percentages for precincts with votes
+percentage_check = np.isclose(
+    gdf.loc[non_zero_votes_mask, 'harris_perc'] + 
+    gdf.loc[non_zero_votes_mask, 'trump_perc'] + 
+    gdf.loc[non_zero_votes_mask, 'other_perc'], 
+    1.0, 
+    atol=1e-10  # absolute tolerance to account for floating-point imprecision
+)
+
+# If any rows fail the check, print them out
+problematic_rows = gdf.loc[non_zero_votes_mask][~percentage_check]
+if not problematic_rows.empty:
+    print("Rows where percentages do not sum to 1:")
+    print(problematic_rows[['precinct', 'harris_perc', 'trump_perc', 'other_perc', 'total_voters']])
+    print(f"Number of problematic rows: {len(problematic_rows)}")
+    
+# Raise an error if there are any problematic rows
+if not problematic_rows.empty:
+    raise ValueError("Candidate percentages do not sum to 1 in all precincts")
+
+### ANALYZING DISTRICTS ###
 def calculate_percentages(district_stats, level):
     """
     Adds percentage columns for each party to the district stats DataFrame.
@@ -305,11 +361,9 @@ def analyze_districts(gdf, level, graph, cut_edges, summary_df=None):
              f'figs/np_perc_{level}.png', level)
 
     # Reloading graph
-    print("Loading updated graph...")
     graph = Graph.from_geodataframe(gdf)
-    print("Updated graph loaded.")
-    print(f"Information at nodes: {graph.nodes()[0].keys()}")
-    print(f"Is the dual graph still connected? {nx.is_connected(graph)}")
+    if not nx.is_connected(graph):
+        raise ValueError("Graph is no longer connected")
 
     return partition, gdf, graph, summary_df
 
@@ -326,147 +380,204 @@ summary_df.to_csv("data/summary.csv", index=False)
 print("Enacted maps data manipulation complete.\n")
 print("gdf:\n", gdf.columns)
 
-### TODO: ECOLOGICAL INFERENCE ###
+### ECOLOGICAL INFERENCE ###
 
-## TODO: PyEI: RxC ##
+## PyEI: RxC ##
+
+def investigate_percentages(gdf, percentage_columns=['harris_perc', 'trump_perc', 'other_perc']):
+    """
+    Investigate potential issues with percentage calculations
+    
+    Parameters:
+    - gdf: GeoDataFrame with percentage columns
+    - percentage_columns: List of percentage column names to check
+    
+    Returns:
+    - Prints detailed diagnostic information
+    """
+    # Create a copy to avoid modifying the original DataFrame
+    df = gdf.copy()
+    
+    # Diagnostic checks
+    print("Percentage Calculation Diagnostics:")
+    print("-----------------------------------")
+    
+    # Total votes column check
+    print("\nTotal Votes Distribution:")
+    print(df['total_vote'].describe())
+    
+    # Check for zero total votes
+    zero_vote_districts = df[df['total_vote'] == 0]
+    print(f"\nNumber of districts with zero total votes: {len(zero_vote_districts)}")
+    
+    # Raw vote totals check
+    print("\nRaw Vote Totals:")
+    print(f"Harris total: {df['harris'].sum()}")
+    print(f"Trump total: {df['trump'].sum()}")
+    print(f"Other total: {df['other'].sum()}")
+    print(f"Total votes sum: {df['harris'].sum() + df['trump'].sum() + df['other'].sum()}")
+    
+    # Detailed percentage calculation
+    print("\nPercentage Calculation Details:")
+    for col in percentage_columns:
+        base_col = col.replace('_perc', '')
+        
+        # Recompute percentages with extra precision
+        df[f'{col}_precise'] = df[f'{base_col}'] / df['total_vote']
+        
+        # Find rows with significant discrepancies
+        df['perc_diff'] = np.abs(df[col] - df[f'{col}_precise'])
+        significant_diff_rows = df[df['perc_diff'] > 1e-10]
+        
+        print(f"\n{col} Diagnostics:")
+        print(f"Max raw votes: {df[base_col].max()}")
+        print(f"Min raw votes: {df[base_col].min()}")
+        print(f"Number of rows with significant percentage discrepancies: {len(significant_diff_rows)}")
+        
+        if not significant_diff_rows.empty:
+            print("\nSample of rows with discrepancies:")
+            print(significant_diff_rows[['precinct', base_col, 'total_vote', col, f'{col}_precise', 'perc_diff']].head())
+    
+    # Comprehensive percentage sum check
+    print("\nPercentage Sum Checks:")
+    # Check for rows where percentages don't sum to 1
+    df['percentage_sum'] = df[percentage_columns].sum(axis=1)
+    
+    # Tolerance for sum check (increased to account for floating point issues)
+    sum_check = np.isclose(df['percentage_sum'], 1.0, atol=1e-9, rtol=1e-9)
+    
+    problematic_rows = df[~sum_check]
+    print(f"Number of rows where percentages don't sum to 1: {len(problematic_rows)}")
+    
+    if not problematic_rows.empty:
+        print("\nProblematic rows:")
+        print(problematic_rows[['precinct', 'harris_perc', 'trump_perc', 'other_perc', 'percentage_sum', 'total_vote']])
+
+# Usage
+investigate_percentages(gdf)
+
+# Create a new GeoDataFrame with only rows that have both total_vote and total_voters > 0
+ei_gdf = gdf[(gdf['total_vote'] > 0) & (gdf['total_voters'] > 0)].copy()
 
 # Format the data
-# group_fractions_rbyc = np.array(gdf[['dem_perc', 'rep_perc', 'ind_perc']]).T
-# votes_fractions_rbyc = np.array(gdf[['harris_perc', 'trump_perc', 'other_perc']]).T
-# precinct_pops = np.array(gdf['total_voters']).astype(int)
-# candidate_names_rbyc = ["Harris", "Trump", "Other"]
-# demographic_group_names_rbyc = ["Democrat", "Republican", "Independent"]
+group_fractions_rbyc = np.array(ei_gdf[['dem_perc', 'rep_perc', 'ind_perc']]).T
+votes_fractions_rbyc = np.array(ei_gdf[['harris_perc', 'trump_perc', 'other_perc']]).T
+precinct_pops = np.array(ei_gdf['total_vote']).astype(int)
+candidate_names_rbyc = ["Harris", "Trump", "Other"]
+demographic_group_names_rbyc = ["Democrat", "Republican", "Independent"]
 
 # Fitting a first model
-# ei_rbyc = RowByColumnEI(model_name='multinomial-dirichlet')
+ei_rbyc = RowByColumnEI(model_name='multinomial-dirichlet')
 
 # Fit the model
-# ei_rbyc.fit(group_fractions_rbyc,
-       # votes_fractions_rbyc,
-       # precinct_pops,
-       # demographic_group_names=demographic_group_names_rbyc,
-       # candidate_names=candidate_names_rbyc,
-       # draws=1200,
-       # tune=3000,
-       # chains=4
-# )
-
-# Generate a simple report to summarize the results
-# print(ei_rbyc.summary())
-
-# Visualize statistical model
-# model = ei_rbyc.sim_model
-# plt.figure()
-# pm.model_to_graphviz(model)
-# plt.savefig("ei_rxc_model.png")
-
-# plt.figure()
-# ei_rbyc.plot_kdes(plot_by="candidate")
-# plt.savefig("ei_rxc_candidate.png")
-
-# plt.figure()
-# ei_rbyc.plot_kdes(plot_by="group")
-# plt.savefig("ei_rxc_group.png")
-
-# Visualize CIs for preference
-# plt.figure()
-# ei_rbyc.plot()
-# plt.savefig("ei_rxc_ci.png")
-
-# Visualize on precinct-by-precinct basis
-# plt.figure()
-# ei_rbyc.precinct_level_plot()
-# plt.savefig("ei_rxc_precincts.png")
-
-# Report with numerical values
-# print("EI RxC Information")
-# print(ei_rbyc.summary())
-# print(ei_rbyc.polarization_report(percentile=95, reference_group=0, verbose=True))
-# print(ei_rbyc.polarization_report(threshold=0.10, reference_group=0, verbose=True))
+ei_rbyc.fit(group_fractions_rbyc,
+       votes_fractions_rbyc,
+       precinct_pops,
+       demographic_group_names=demographic_group_names_rbyc,
+       candidate_names=candidate_names_rbyc,
+       draws=1200,
+       tune=3000,
+       chains=4
+)
 
 # Save EI ouptut
-# to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
+to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
+
+# Generate a simple report to summarize the results
+print(ei_rbyc.summary())
+
+plt.figure()
+ei_rbyc.plot_kdes(plot_by="candidate")
+plt.savefig("ei_rxc_candidate.png")
+
+plt.figure()
+ei_rbyc.plot_kdes(plot_by="group")
+plt.savefig("ei_rxc_group.png")
+
+# Visualize CIs for preference
+plt.figure()
+ei_rbyc.plot()
+plt.savefig("ei_rxc_ci.png")
+
+# Save EI ouptut
+to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
 
 ## PyEI: 2x2 ##
 
 # Format the data
-# group_fraction_2by2 = np.array(gdf["ind_perc"])
-# votes_fraction_2by2 = np.array(gdf["harris_perc"])
-# precinct_pops = np.array(gdf["total_voters"]).astype(int)
-# candidate_name_2by2 = "Harris"
-# demographic_group_name_2by2 = "Independent"
+group_fraction_2by2 = np.array(ei_gdf["ind_perc"])
+votes_fraction_2by2 = np.array(ei_gdf["harris_perc"])
+precinct_pops = np.array(ei_gdf["total_vote"]).astype(int)
+candidate_name_2by2 = "Harris"
+demographic_group_name_2by2 = "Independent"
 
 # Run analysis
 # Fitting a first model
-# ei_2by2 = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=15, pareto_shape=2)
+ei_2by2 = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=15, pareto_shape=2)
 
 # Fit the model
-# ei_2by2.fit(group_fraction_2by2,
-      # votes_fraction_2by2,
-      # precinct_pops,
-      # demographic_group_name=demographic_group_name_2by2,
-      # candidate_name=candidate_name_2by2,
-      # draws=1200,
-      # tune=3000,
-      # chains=4
-# )
+ei_2by2.fit(group_fraction_2by2,
+      votes_fraction_2by2,
+      precinct_pops,
+      demographic_group_name=demographic_group_name_2by2,
+      candidate_name=candidate_name_2by2,
+      draws=1200,
+      tune=3000
+)
+
+# Save EI ouptut
+to_netcdf(ei_2by2, 'data/ei_2x2.netcdf')
 
 # Generate a simple report to summarize the results
-# print(ei_2by2.summary())
-
-# Visualize statistical model
-# model = ei_2by2.sim_model
-# plt.figure()
-# pm.model_to_graphviz(model)
-# plt.savefig("ei_2x2_model.png")
+print(ei_2by2.summary())
 
 # Visualize CIs for preference
-# plt.figure()
-# ei_2by2.plot()
-# plt.savefig("ei_2x2_ci.png")
+plt.figure()
+ei_2by2.plot()
+plt.savefig("ei_2x2_ci.png")
 
 # Visualize on precinct-by-precinct basis
-# plt.figure()
-# ei_2by2.precinct_level_plot()
-# plt.savefig("ei_2x2_precincts.png")
+plt.figure()
+ei_2by2.precinct_level_plot()
+plt.savefig("ei_2x2_precincts.png")
 
 # Report with numerical values
-# print("EI 2x2 Information")
-# print(ei_2by2.summary())
-# print(ei_2by2.polarization_report(percentile=95, reference_group=0, verbose=True))
-# print(ei_2by2.polarization_report(threshold=0.10, reference_group=0, verbose=True))
+print("EI 2x2 Information")
+print(ei_2by2.summary())
+print(ei_2by2.polarization_report(percentile=95, reference_group=0, verbose=True))
+print(ei_2by2.polarization_report(threshold=0.10, reference_group=0, verbose=True))
 
 # print("Goodman's ER - precincts not weighted by population")
-# goodmans_er = GoodmansER()
+goodmans_er = GoodmansER()
 
-# goodmans_er.fit(
-    # group_fraction_2by2,
-    # votes_fraction_2by2,
-    # demographic_group_name=demographic_group_name_2by2,
-    # candidate_name=candidate_name_2by2
-# )
+goodmans_er.fit(
+    group_fraction_2by2,
+    votes_fraction_2by2,
+    demographic_group_name=demographic_group_name_2by2,
+    candidate_name=candidate_name_2by2
+)
 
-# print(goodmans_er.summary())
+print(goodmans_er.summary())
 
-# plt.figure()
-# goodmans_er.plot()
-# plt.figure("ei_goodmans_unweighted.png")
+plt.figure()
+goodmans_er.plot()
+plt.figure("ei_goodmans_unweighted.png")
 
-# print("Goodman's ER - precincts weighted by population")
-# goodmans_er = GoodmansER(is_weighted_regression="True")
+print("Goodman's ER - precincts weighted by population")
+goodmans_er = GoodmansER(is_weighted_regression="True")
 
-# goodmans_er.fit(group_fraction_2by2,
-    # votes_fraction_2by2,
-    # precinct_pops,
-    # demographic_group_name=demographic_group_name_2by2,
-    # candidate_name=candidate_name_2by2
-# )
+goodmans_er.fit(group_fraction_2by2,
+    votes_fraction_2by2,
+    precinct_pops,
+    demographic_group_name=demographic_group_name_2by2,
+    candidate_name=candidate_name_2by2
+)
 
-# print(goodmans_er.summary())
+print(goodmans_er.summary())
 
-# plt.figure()
-# goodmans_er.plot()
-# plt.figure("ei_goodmans_weighted.png")
+plt.figure()
+goodmans_er.plot()
+plt.figure("ei_goodmans_weighted.png")
 
 ### ENSEMBLE ANALYSIS ###
 
