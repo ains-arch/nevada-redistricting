@@ -380,204 +380,52 @@ summary_df.to_csv("data/summary.csv", index=False)
 print("Enacted maps data manipulation complete.\n")
 print("gdf:\n", gdf.columns)
 
-### ECOLOGICAL INFERENCE ###
-
-## PyEI: RxC ##
-
-def investigate_percentages(gdf, percentage_columns=['harris_perc', 'trump_perc', 'other_perc']):
-    """
-    Investigate potential issues with percentage calculations
-    
-    Parameters:
-    - gdf: GeoDataFrame with percentage columns
-    - percentage_columns: List of percentage column names to check
-    
-    Returns:
-    - Prints detailed diagnostic information
-    """
-    # Create a copy to avoid modifying the original DataFrame
-    df = gdf.copy()
-    
-    # Diagnostic checks
-    print("Percentage Calculation Diagnostics:")
-    print("-----------------------------------")
-    
-    # Total votes column check
-    print("\nTotal Votes Distribution:")
-    print(df['total_vote'].describe())
-    
-    # Check for zero total votes
-    zero_vote_districts = df[df['total_vote'] == 0]
-    print(f"\nNumber of districts with zero total votes: {len(zero_vote_districts)}")
-    
-    # Raw vote totals check
-    print("\nRaw Vote Totals:")
-    print(f"Harris total: {df['harris'].sum()}")
-    print(f"Trump total: {df['trump'].sum()}")
-    print(f"Other total: {df['other'].sum()}")
-    print(f"Total votes sum: {df['harris'].sum() + df['trump'].sum() + df['other'].sum()}")
-    
-    # Detailed percentage calculation
-    print("\nPercentage Calculation Details:")
-    for col in percentage_columns:
-        base_col = col.replace('_perc', '')
-        
-        # Recompute percentages with extra precision
-        df[f'{col}_precise'] = df[f'{base_col}'] / df['total_vote']
-        
-        # Find rows with significant discrepancies
-        df['perc_diff'] = np.abs(df[col] - df[f'{col}_precise'])
-        significant_diff_rows = df[df['perc_diff'] > 1e-10]
-        
-        print(f"\n{col} Diagnostics:")
-        print(f"Max raw votes: {df[base_col].max()}")
-        print(f"Min raw votes: {df[base_col].min()}")
-        print(f"Number of rows with significant percentage discrepancies: {len(significant_diff_rows)}")
-        
-        if not significant_diff_rows.empty:
-            print("\nSample of rows with discrepancies:")
-            print(significant_diff_rows[['precinct', base_col, 'total_vote', col, f'{col}_precise', 'perc_diff']].head())
-    
-    # Comprehensive percentage sum check
-    print("\nPercentage Sum Checks:")
-    # Check for rows where percentages don't sum to 1
-    df['percentage_sum'] = df[percentage_columns].sum(axis=1)
-    
-    # Tolerance for sum check (increased to account for floating point issues)
-    sum_check = np.isclose(df['percentage_sum'], 1.0, atol=1e-9, rtol=1e-9)
-    
-    problematic_rows = df[~sum_check]
-    print(f"Number of rows where percentages don't sum to 1: {len(problematic_rows)}")
-    
-    if not problematic_rows.empty:
-        print("\nProblematic rows:")
-        print(problematic_rows[['precinct', 'harris_perc', 'trump_perc', 'other_perc', 'percentage_sum', 'total_vote']])
-
-# Usage
-investigate_percentages(gdf)
+### ECOLOGICAL INFERENCE: RxC ###
 
 # Create a new GeoDataFrame with only rows that have both total_vote and total_voters > 0
+# Can't do EI on precincts that have no votes in them
 ei_gdf = gdf[(gdf['total_vote'] > 0) & (gdf['total_voters'] > 0)].copy()
 
 # Format the data
-group_fractions_rbyc = np.array(ei_gdf[['dem_perc', 'rep_perc', 'ind_perc']]).T
-votes_fractions_rbyc = np.array(ei_gdf[['harris_perc', 'trump_perc', 'other_perc']]).T
+group_fractions = np.array(ei_gdf[['dem_perc', 'rep_perc', 'ind_perc']]).T
+votes_fractions = np.array(ei_gdf[['harris_perc', 'trump_perc', 'other_perc']]).T
 precinct_pops = np.array(ei_gdf['total_vote']).astype(int)
-candidate_names_rbyc = ["Harris", "Trump", "Other"]
-demographic_group_names_rbyc = ["Democrat", "Republican", "Independent"]
+candidate_names = ["Harris", "Trump", "Other"]
+demographic_group_names = ["Democrat", "Republican", "Independent"]
 
 # Fitting a first model
-ei_rbyc = RowByColumnEI(model_name='multinomial-dirichlet')
+# ei = RowByColumnEI(model_name='multinomial-dirichlet')
 
 # Fit the model
-ei_rbyc.fit(group_fractions_rbyc,
-       votes_fractions_rbyc,
-       precinct_pops,
-       demographic_group_names=demographic_group_names_rbyc,
-       candidate_names=candidate_names_rbyc,
-       draws=1200,
-       tune=3000,
-       chains=4
-)
+# ei.fit(group_fractions,
+#        votes_fractions,
+#        precinct_pops,
+#        demographic_group_names=demographic_group_names,
+#        candidate_names=candidate_names,
+#        draws=1200,
+#        tune=3000,
+#        chains=4
+# )
 
 # Save EI ouptut
-to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
+# to_netcdf(ei, 'data/ei.netcdf')
+
+# Import EI output from previous run
+ei = from_netcdf('data/ei.netcdf')
 
 # Generate a simple report to summarize the results
-print(ei_rbyc.summary())
+print(ei.summary())
 
 plt.figure()
-ei_rbyc.plot_kdes(plot_by="candidate")
-plt.savefig("ei_rxc_candidate.png")
+ei.plot_kdes(plot_by="candidate")
+plt.savefig("figs/ei_candidate.png")
 
 plt.figure()
-ei_rbyc.plot_kdes(plot_by="group")
-plt.savefig("ei_rxc_group.png")
+ei.plot_kdes(plot_by="group")
+plt.savefig("figs/ei_group.png")
 
-# Visualize CIs for preference
-plt.figure()
-ei_rbyc.plot()
-plt.savefig("ei_rxc_ci.png")
-
-# Save EI ouptut
-to_netcdf(ei_rbyc, 'data/ei_rxc.netcdf')
-
-## PyEI: 2x2 ##
-
-# Format the data
-group_fraction_2by2 = np.array(ei_gdf["ind_perc"])
-votes_fraction_2by2 = np.array(ei_gdf["harris_perc"])
-precinct_pops = np.array(ei_gdf["total_vote"]).astype(int)
-candidate_name_2by2 = "Harris"
-demographic_group_name_2by2 = "Independent"
-
-# Run analysis
-# Fitting a first model
-ei_2by2 = TwoByTwoEI(model_name="king99_pareto_modification", pareto_scale=15, pareto_shape=2)
-
-# Fit the model
-ei_2by2.fit(group_fraction_2by2,
-      votes_fraction_2by2,
-      precinct_pops,
-      demographic_group_name=demographic_group_name_2by2,
-      candidate_name=candidate_name_2by2,
-      draws=1200,
-      tune=3000
-)
-
-# Save EI ouptut
-to_netcdf(ei_2by2, 'data/ei_2x2.netcdf')
-
-# Generate a simple report to summarize the results
-print(ei_2by2.summary())
-
-# Visualize CIs for preference
-plt.figure()
-ei_2by2.plot()
-plt.savefig("ei_2x2_ci.png")
-
-# Visualize on precinct-by-precinct basis
-plt.figure()
-ei_2by2.precinct_level_plot()
-plt.savefig("ei_2x2_precincts.png")
-
-# Report with numerical values
-print("EI 2x2 Information")
-print(ei_2by2.summary())
-print(ei_2by2.polarization_report(percentile=95, reference_group=0, verbose=True))
-print(ei_2by2.polarization_report(threshold=0.10, reference_group=0, verbose=True))
-
-# print("Goodman's ER - precincts not weighted by population")
-goodmans_er = GoodmansER()
-
-goodmans_er.fit(
-    group_fraction_2by2,
-    votes_fraction_2by2,
-    demographic_group_name=demographic_group_name_2by2,
-    candidate_name=candidate_name_2by2
-)
-
-print(goodmans_er.summary())
-
-plt.figure()
-goodmans_er.plot()
-plt.figure("ei_goodmans_unweighted.png")
-
-print("Goodman's ER - precincts weighted by population")
-goodmans_er = GoodmansER(is_weighted_regression="True")
-
-goodmans_er.fit(group_fraction_2by2,
-    votes_fraction_2by2,
-    precinct_pops,
-    demographic_group_name=demographic_group_name_2by2,
-    candidate_name=candidate_name_2by2
-)
-
-print(goodmans_er.summary())
-
-plt.figure()
-goodmans_er.plot()
-plt.figure("ei_goodmans_weighted.png")
+print("DONE WITH EI")
+breaaak
 
 ### ENSEMBLE ANALYSIS ###
 
