@@ -361,7 +361,7 @@ for chunk in pd.read_csv('data/cast_vote.csv', header=4, chunksize=CHUNK_SIZE, l
     }).reset_index()
     
     # Calculate total votes per precinct
-    chunk_summary['total_votes'] = (
+    chunk_summary['total_vote'] = (
         chunk_summary['harris'] + 
         chunk_summary['trump'] + 
         chunk_summary['other']
@@ -375,7 +375,7 @@ precinct_summary = precinct_summary.groupby('precinct').agg({
     'harris': 'sum',
     'trump': 'sum',
     'other': 'sum',
-    'total_votes': 'sum'
+    'total_vote': 'sum'
 }).reset_index()
 
 # Again, drop voters in the 9996 "precinct" because they are not spatially organized
@@ -392,7 +392,7 @@ precinct_summary.to_csv("data/cast_vote_fixed.csv", index=False)
 # Merge with left join (keeping all rows from aggregated_gdf)
 # Fill missing vote count rows with 0
 final_gdf = aggregated_gdf.merge(precinct_summary, on='precinct', how='left')
-final_gdf[['harris', 'trump', 'other', 'total_votes']] = final_gdf[['harris', 'trump', 'other', 'total_votes']].fillna(0)
+final_gdf[['harris', 'trump', 'other', 'total_vote']] = final_gdf[['harris', 'trump', 'other', 'total_vote']].fillna(0)
 
 print("final_gdf:\n", final_gdf.columns)
 print("final_gdf head:\n", final_gdf.head())
