@@ -1,0 +1,233 @@
+nohup: ignoring input
+CSV CLEANING AND MERGING
+Cleaned registration data saved to 'data/registration_fixed.csv'.
+Cleaned voters data saved to 'data/voters_fixed.csv'.
+Filtered join completed and saved to 'filtered_voters.csv'.
+   PRECINCT  CONGRESS  ASSEMBLY  ...  voter_party  date_voted election_code
+0      3557         3         2  ...          NP   11/05/2024           24G
+1      7515         1        18  ...          NP   11/05/2024           24G
+2      5044         4        15  ...          DEM  11/05/2024           24G
+3      6012         3        42  ...          DEM  11/05/2024           24G
+4      6750         3        35  ...          NP   11/05/2024           24G
+
+[5 rows x 15 columns]
+         PRECINCT  CONGRESS  ASSEMBLY  ...  voter_party  date_voted election_code
+1032787      2055         4         1  ...          DEM  11/05/2024           24G
+1032788      2055         4         1  ...          DEM  11/05/2024           24G
+1032789      5570         1        14  ...          REP  11/05/2024           24G
+1032790      7021         1        20  ...          REP  10/29/2024           24G
+1032791      5550         1        19  ...          DEM  10/22/2024           24G
+
+[5 rows x 15 columns]
+
+PRECINCT SHAPEFILE CLEANING
+      PREC  ...                                           geometry
+0     1328  ...  POLYGON ((787782.553 26700270.745, 787762.338 ...
+1     1330  ...  POLYGON ((784054.250 26717334.875, 784064.701 ...
+2     1341  ...  POLYGON ((785931.719 26706734.831, 785633.885 ...
+3     1343  ...  POLYGON ((788919.930 26706757.703, 788246.304 ...
+4     1344  ...  POLYGON ((791288.049 26706786.240, 790901.556 ...
+...    ...  ...                                                ...
+1002  7562  ...  POLYGON ((874569.140 26690957.568, 874890.980 ...
+1003  6527  ...  POLYGON ((729441.534 26737019.166, 729651.301 ...
+1004  6018  ...  POLYGON ((731333.291 26741701.627, 731537.759 ...
+1005  5530  ...  POLYGON ((854438.473 26748648.765, 854432.619 ...
+1006  7366  ...  POLYGON ((834293.937 26716908.000, 833933.375 ...
+
+[1007 rows x 15 columns]
+     PREC  ...                                           geometry
+985  7908  ...  POLYGON ((830137.227 26720469.893, 829866.400 ...
+987  7908  ...  POLYGON ((825236.489 26721361.294, 825227.782 ...
+
+[2 rows x 15 columns]
+original_gdf.info:
+
+<class 'geopandas.geodataframe.GeoDataFrame'>
+RangeIndex: 1007 entries, 0 to 1006
+Data columns (total 15 columns):
+ #   Column      Non-Null Count  Dtype   
+---  ------      --------------  -----   
+ 0   PREC        1007 non-null   int64   
+ 1   WARD        1007 non-null   int64   
+ 2   COMMISSION  1007 non-null   object  
+ 3   ASSEMBLY    1007 non-null   int64   
+ 4   SENATE      1007 non-null   int64   
+ 5   EDUCATION   1007 non-null   int64   
+ 6   REGENT      1007 non-null   int64   
+ 7   SCHOOL      1007 non-null   object  
+ 8   CONGRESS    1007 non-null   int64   
+ 9   TOWNSHIP    1007 non-null   object  
+ 10  POLLING     1007 non-null   int64   
+ 11  GlobalID    1007 non-null   object  
+ 12  Shape_Leng  1007 non-null   float64 
+ 13  Shape_Area  1007 non-null   float64 
+ 14  geometry    1007 non-null   geometry
+dtypes: float64(2), geometry(1), int64(8), object(4)
+memory usage: 118.1+ KB
+
+maup doctor on unrepaired
+
+There are 1 overlaps.
+There are 2 holes.
+There are some invalid geometries.
+
+End maup doctor on unrepaired
+
+Saved figs/original_gdf.png
+
+Running smart repair on original gdf
+
+Snapping all geometries to a grid with precision 10^( -5 ) to avoid GEOS errors.
+Identifying overlaps...
+Resolving overlaps...
+Filling gaps...
+Gaps to simplify:   0%|          | 0/1 [00:00<?, ?it/s]Gaps to simplify: 100%|██████████| 1/1 [00:00<00:00, 17.28it/s]
+Gaps to fill: 0it [00:00, ?it/s]Gaps to fill: 0it [00:00, ?it/s]
+
+End smart repair on original gdf
+
+      PREC  ...                                           geometry
+0     1328  ...  POLYGON ((787782.553 26700270.745, 787762.338 ...
+1     1330  ...  POLYGON ((784054.250 26717334.875, 784064.701 ...
+2     1341  ...  POLYGON ((785931.719 26706734.831, 785633.885 ...
+3     1343  ...  POLYGON ((788316.478 26709427.563, 788316.502 ...
+4     1344  ...  POLYGON ((790939.113 26708754.088, 790953.812 ...
+...    ...  ...                                                ...
+1002  7562  ...  POLYGON ((855430.242 26691227.448, 855430.319 ...
+1003  6527  ...  POLYGON ((735268.145 26733532.890, 735323.493 ...
+1004  6018  ...  POLYGON ((732679.250 26735856.833, 732683.951 ...
+1005  5530  ...  POLYGON ((856098.914 26747066.029, 856088.604 ...
+1006  7366  ...  POLYGON ((836179.063 26718936.000, 836101.125 ...
+
+[1007 rows x 15 columns]
+maup doctor on repaired gdf
+End maup doctor on repaired gdf
+
+Loading repaired gdf graph
+Repaired gdf graph loaded
+
+Is the dual graph connected? True
+Is the dual graph planar? True
+Number of Nodes: 1007
+Number of Edges: 2482
+
+Saved figs/repaired.png
+
+Getting rid of area
+
+      PREC  ...                                           geometry
+0     1328  ...  POLYGON ((787782.553 26700270.745, 787762.338 ...
+1     1330  ...  POLYGON ((784054.250 26717334.875, 784064.701 ...
+2     1341  ...  POLYGON ((785931.719 26706734.831, 785633.885 ...
+3     1343  ...  POLYGON ((788316.478 26709427.563, 788316.502 ...
+4     1344  ...  POLYGON ((790939.113 26708754.088, 790953.812 ...
+...    ...  ...                                                ...
+1002  7562  ...  POLYGON ((855430.242 26691227.448, 855430.319 ...
+1003  6527  ...  POLYGON ((735268.145 26733532.890, 735323.493 ...
+1004  6018  ...  POLYGON ((732679.250 26735856.833, 732683.951 ...
+1005  5530  ...  POLYGON ((856098.914 26747066.029, 856088.604 ...
+1006  7366  ...  POLYGON ((836179.063 26718936.000, 836101.125 ...
+
+[1007 rows x 14 columns]
+Geometry type: ['Polygon']
+Getting rid of duplicate PREC
+Is 'PREC' unique?: False
+Duplicate PREC rows:
+      PREC  ...                                           geometry
+985  7908  ...  POLYGON ((828652.303 26720789.271, 828652.250 ...
+987  7908  ...  POLYGON ((827757.665 26714913.629, 827758.349 ...
+
+[2 rows x 14 columns]
+Union weird precinct
+Done unioning weird precinct
+Merge unioned weird precinct with gdf
+Weird precinct merged back in
+Now we have duplicates:
+      PREC  ...                                           geometry
+985  7908  ...  MULTIPOLYGON (((827758.349 26714853.438, 82754...
+987  7908  ...  MULTIPOLYGON (((827758.349 26714853.438, 82754...
+
+[2 rows x 14 columns]
+Drop duplicate
+Recalculate Shape_Leng
+
+Saved figs/merged.png
+
+maup doctor on merged gdf
+End maup doctor on merged gdf
+
+Graph sanity check merged gdf
+Graph columns: dict_keys(['boundary_node', 'area', 'PREC', 'WARD', 'COMMISSION', 'ASSEMBLY', 'SENATE', 'EDUCATION', 'REGENT', 'SCHOOL', 'CONGRESS', 'TOWNSHIP', 'POLLING', 'GlobalID', 'Shape_Leng', 'geometry'])
+
+Is the dual graph connected? True
+VOTERFILE & PRECINCT SHAPEFILE
+voters_df:
+ Index(['PRECINCT', 'CONGRESS', 'ASSEMBLY', 'SENATE', 'COMMISSION', 'PARTY_REG',
+       'REGISTRATION_NUM', 'idnumber', 'votername', 'voting_method',
+       'precinct', 'ballot_party', 'voter_party', 'date_voted',
+       'election_code'],
+      dtype='object')
+precincts_gdf:
+ Index(['PREC', 'WARD', 'COMMISSION', 'ASSEMBLY', 'SENATE', 'EDUCATION',
+       'REGENT', 'SCHOOL', 'CONGRESS', 'TOWNSHIP', 'POLLING', 'GlobalID',
+       'Shape_Leng', 'geometry'],
+      dtype='object')
+Number of unique precincts in precincts_gdf: 1006
+Number of unique precincts in voters_df: 812
+Number of precincts in shapefile but not in CSV: 195
+Precincts in CSV but not in shapefile: {9996}
+Filtered voter records: 1032755
+voters_df_filtered:
+ Index(['PRECINCT', 'CONGRESS', 'ASSEMBLY', 'SENATE', 'COMMISSION', 'PARTY_REG',
+       'REGISTRATION_NUM', 'idnumber', 'votername', 'voting_method',
+       'precinct', 'ballot_party', 'voter_party', 'date_voted',
+       'election_code'],
+      dtype='object')
+party_counts:
+ Index(['precinct', '   ', 'DEM', 'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP',
+       'NLN', 'NP ', 'NTP', 'OTH', 'REF', 'REP', 'TPN', 'WSP', 'nan'],
+      dtype='object', name='PARTY_REG')
+weird column: [0 1]
+weird voters:
+         PRECINCT  CONGRESS  ASSEMBLY  ...  voter_party  date_voted election_code
+118396      6695         3         2  ...               11/05/2024           24G
+156113      4413         4         1  ...               10/28/2024           24G
+319958      4505         4        17  ...               11/01/2024           24G
+593910      3706         4        36  ...               11/05/2024           24G
+630846      3800         3        34  ...               11/05/2024           24G
+725790      4040         4         6  ...               11/05/2024           24G
+
+[6 rows x 15 columns]
+precincts_gdf:
+ Index(['PREC', 'ASSEMBLY', 'SENATE', 'CONGRESS', 'COMMISSION', 'geometry'], dtype='object')
+precincts_gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'geometry'], dtype='object')
+aggregated_gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'geometry',
+       '   ', 'DEM', 'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP ',
+       'NTP', 'OTH', 'REF', 'REP', 'TPN', 'WSP', 'nan'],
+      dtype='object')
+aggregated_gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'geometry',
+       'DEM', 'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP ', 'NTP',
+       'OTH', 'REF', 'REP', 'TPN', 'WSP'],
+      dtype='object')
+final_gdf:
+ Index(['precinct', 'assembly', 'senate', 'congress', 'commission', 'DEM',
+       'FOR', 'GRN', 'IAP', 'LPN', 'NAT', 'NFP', 'NLN', 'NP', 'NTP', 'OTH',
+       'REF', 'REP', 'TPN', 'WSP', 'geometry', 'harris', 'trump', 'other',
+       'total_vote'],
+      dtype='object')
+final_gdf head:
+    precinct  assembly  senate  congress  ...  harris   trump  other  total_vote
+0      1328        41      12         3  ...   666.0   664.0   17.0      1347.0
+1      1330        41      12         3  ...   593.0   928.0   27.0      1548.0
+2      1341        41      12         3  ...  1160.0  1136.0   33.0      2329.0
+3      1343        41      12         3  ...   330.0   500.0   11.0       841.0
+4      1344        21      12         3  ...   642.0   522.0   13.0      1177.0
+
+[5 rows x 25 columns]
+Total rows processed: 1033284
+Total rows dropped: 0
+48.79user 6.57system 0:53.62elapsed 103%CPU (0avgtext+0avgdata 1782812maxresident)k
+0inputs+384088outputs (0major+5259645minor)pagefaults 0swaps

@@ -394,24 +394,24 @@ candidate_names = ["Harris", "Trump", "Other"]
 demographic_group_names = ["Democrat", "Republican", "Independent"]
 
 # Fitting a first model
-# ei = RowByColumnEI(model_name='multinomial-dirichlet')
+ei = RowByColumnEI(model_name='multinomial-dirichlet')
 
 # Fit the model
-# ei.fit(group_fractions,
-#        votes_fractions,
-#        precinct_pops,
-#        demographic_group_names=demographic_group_names,
-#        candidate_names=candidate_names,
-#        draws=1200,
-#        tune=3000,
-#        chains=4
-# )
+ei.fit(group_fractions,
+       votes_fractions,
+       precinct_pops,
+       demographic_group_names=demographic_group_names,
+       candidate_names=candidate_names,
+       draws=1200,
+       tune=3000,
+       chains=4
+)
 
 # Save EI ouptut
-# to_netcdf(ei, 'data/ei.netcdf')
+to_netcdf(ei, 'data/ei.netcdf')
 
 # Import EI output from previous run
-ei = from_netcdf('data/ei.netcdf')
+# ei = from_netcdf('data/ei.netcdf')
 
 # Generate a simple report to summarize the results
 print(ei.summary())
@@ -421,8 +421,6 @@ ei.plot()
 plt.tight_layout()
 plt.subplots_adjust(right=0.80)
 plt.savefig("figs/ei.png")
-
-breaaak
 
 ### ENSEMBLE ANALYSIS ###
 
@@ -440,7 +438,6 @@ POP_TOLERANCE = 0.33
 def save_histogram(data, enacted_value, party, metric, color, flag, output_dir="figs"):
     """
     Saves a histogram for the ensemble data with appropriate styling.
-
     Parameters:
         data (list): Ensemble data for the metric (e.g., plurality or majority).
         enacted_value (int): The value of the metric in the enacted plan.
@@ -459,6 +456,8 @@ def save_histogram(data, enacted_value, party, metric, color, flag, output_dir="
     plt.hist(data, bins=bins, edgecolor='black', color=color)
     if metric:
         plt.xticks(ticks)
+    else:
+        plt.xlim(200, 425)  # Set x-axis for no metric
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel("Ensembles", fontsize=12)
     if metric:
@@ -482,7 +481,6 @@ def save_histogram(data, enacted_value, party, metric, color, flag, output_dir="
 def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
     """
     Saves a boxplot for party percentages by district at a given level.
-
     Parameters:
         data (list of lists): Ensemble data for the party percentages across districts.
         enacted_values (list): Enacted plan percentages for the party, one per district.
@@ -494,7 +492,6 @@ def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
     a = np.array(data)
     # Sort enacted values for better visualization
     enacted_values_sorted = sorted(enacted_values)
-
     # Create the boxplot
     plt.figure()
     plt.boxplot(a, patch_artist=True, 
@@ -503,18 +500,15 @@ def save_boxplot(data, enacted_values, party, color, flag, output_dir="figs"):
                 whiskerprops=dict(color='black', linewidth=1),
                 capprops=dict(color='black', linewidth=1),
                 zorder=1)
-
     # Overlay the enacted plan as a scatter plot
     plt.scatter(x=range(1, len(enacted_values_sorted) + 1), y=enacted_values_sorted, 
                 color="goldenrod", label="Enacted plan", zorder=2)
-
     # Add title, labels, and legend
     plt.xlabel("Districts", fontsize=12)
     plt.ylabel(f"{party} Percentage", fontsize=12)
     plt.suptitle(f"{party} Percentage in Commission Districts", fontsize=14)
     plt.title(f"from {flag.capitalize()} Start")
     plt.legend()
-
     # Save the boxplot
     filename = f"{output_dir}/boxplot-{party.lower()}-{flag}.png"
     plt.savefig(filename)
